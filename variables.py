@@ -2,4 +2,4 @@
 # Variables file
 
 # Importing modules
-import csv
+import csv, sys
