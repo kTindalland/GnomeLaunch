@@ -1,0 +1,2 @@
+Notes:
+    -Be sure to add check to custom colour schemes to not allow 'colour schemes' as a name.
