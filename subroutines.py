@@ -53,7 +53,8 @@ def parseSettings(settings):
 
                     # Add scheme dict to colours dict
                     colours[scheme[0]] = schemeDict
-        return colours
+                defaultScheme = settings[currentSettingRow+1][0]
+        return colours, defaultScheme
     except SettingsError as e:
         print(e.message)
     except:
@@ -62,3 +63,18 @@ def parseSettings(settings):
             e = sys.exc_info()
             print(e)
     return False
+
+defaultSize = lambda: [screenx, screeny]
+
+def setupPygame(screensize=defaultSize(), caption='Gnome Launch'):
+    screen = pygame.display.set_mode(screensize)
+    pygame.display.set_caption(caption)
+    clock = pygame.time.Clock()
+    return [screen, clock]
+
+def changeScheme(schemes, key=False):
+    if type(key) != 'string' or key not in schemes.keys():
+        print('Invalid scheme!')
+        return False
+    else:
+        return schemes[key]
