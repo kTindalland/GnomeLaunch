@@ -24,6 +24,7 @@ def importSettings(filename='settings.csv'):
         file.close()
         return settings
 
+# Convert settings list into usable variables
 def parseSettings(settings):
     colours = {}
     try:
@@ -64,17 +65,77 @@ def parseSettings(settings):
             print(e)
     return False
 
+# Return current default screensize
 defaultSize = lambda: [screenx, screeny]
 
+# Null function for testing purposes
+emptyFunc = lambda: None
+
+# Create pygame objects
 def setupPygame(screensize=defaultSize(), caption='Gnome Launch'):
     screen = pygame.display.set_mode(screensize)
     pygame.display.set_caption(caption)
     clock = pygame.time.Clock()
     return [screen, clock]
 
+# returns selected colour schemes
 def changeScheme(schemes, key=False):
-    if type(key) != 'string' or key not in schemes.keys():
+    if type(key) is not str or key not in schemes.keys():
         print('Invalid scheme!')
         return False
     else:
         return schemes[key]
+
+# Classes for buttons
+class Button():
+    def __init__(self, screen, font, position, dimensions, action):
+        self.screen, self.font, self.position, self.dimensions, self.action = screen, font, position, dimensions, action
+
+        def rect(mousepos):
+            if self.position[0] <= mousepos[0] <= (self.position[0] + self.dimensions[0]):
+                if self.position[1] <= mousepos[1] <= (self.position[1] + self.dimensions[1]):
+                    return True
+            return False
+
+        def circ(mousepos):
+            dx, dy = self.position[0] - mousepos[0], self.position[1] - mousepos[1]
+            if dx ** 2 + dy ** 2 <= self.dimensions ** 2:
+                return True
+            return False
+
+        if type(dimensions) is list:
+            self.equation = rect
+            self.correctDraw = self.rectDraw
+        else:
+            self.equation = circ
+            self.correctDraw = self.circDraw
+
+    def detect(self, e):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            if self.equation(pygame.mouse.get_pos()):
+                self.action()
+
+    def rectDraw(self, scheme, label):
+        # Draw rectangles
+        pygame.draw.rect(self.screen, scheme['off'], [self.position[0], self.position[1], self.dimensions[0], self.dimensions[1]])
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], self.dimensions[0], self.dimensions[1]], 3)
+
+        # Draw label
+        if label != '' and type(label) is str:
+            text = self.font.render(label, True, scheme['text'])
+            width, height = text.get_width() // 2, text.get_height() // 2
+            self.screen.blit(text, [self.position[0]+(self.dimensions[0]//2)-width, self.position[1]+(self.dimensions[1]//2)-height])
+
+    def circDraw(self, scheme, label):
+        # Draw rectangles
+        pygame.draw.circle(self.screen, scheme['off'], self.position, self.dimensions)
+        pygame.draw.circle(self.screen, scheme['outline'], self.position, self.dimensions, 3)
+
+        # Draw label
+        if label != '' and type(label) is str:
+            text = self.font.render(label, True, scheme['text'])
+            width, height = text.get_width() // 2, text.get_height() // 2
+            self.screen.blit(text, [self.position[0]-width, self.position[1]-height])
+
+    def draw(self, scheme, label=''):
+        self.correctDraw(scheme, label)

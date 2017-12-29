@@ -12,12 +12,19 @@ def main():
     screen, clock = setupPygame(defaultSize(), 'Test window')
     done = False
 
+    testFunc = lambda : print('Hello world')
+    b = Button(screen, font, [50,50],[100,40], testFunc)
+
     while not done:
         for e in pygame.event.get():
+            b.detect(e)
             if e.type == pygame.QUIT:
                 done = True
 
         screen.fill(scheme['background'])
+
+        b.draw(scheme, 'Hello')
+
         pygame.display.flip()
         clock.tick(60)
 
