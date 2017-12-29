@@ -88,7 +88,7 @@ def changeScheme(schemes, key=False):
 
 # Classes for buttons
 class Button():
-    def __init__(self, screen, font, position, dimensions, action):
+    def __init__(self, screen, font, position, dimensions, action=emptyFunc):
         self.screen, self.font, self.position, self.dimensions, self.action = screen, font, position, dimensions, action
 
         def rect(mousepos):
