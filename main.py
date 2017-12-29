@@ -9,15 +9,23 @@ def main():
     colours, defaultScheme = parseSettings(settings)
     scheme = colours[defaultScheme]
 
-    screen, clock = setupPygame(defaultSize(), 'Test window')
-    done = False
+    screen, clock = setupPygame(defaultSize(), 'Gnome Launch')
 
-    while not done:
+    start_menu(screen, clock, scheme)
+
+def start_menu(screen, clock, scheme):
+    pygame.display.set_caption("Gnome Launch - Start Menu")
+
+    buttons = {
+        'Tutorials' : None
+    }
+
+    while True:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
-                done = True
+                pygame.quit()
 
-        screen.fill(scheme['background'])
+        screen.fill(scheme["background"])
         pygame.display.flip()
         clock.tick(60)
 
