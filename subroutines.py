@@ -86,6 +86,45 @@ def changeScheme(schemes, key=False):
     else:
         return schemes[key]
 
+def drawGear(screen, scheme, position, dimensions):
+    # Assumes the button is square
+    # Assign vars
+    centre = [int(position[0]+(dimensions[0]//2)), int(position[1]+(dimensions[1]//2))] # Centre of the button
+    gearRad = int(dimensions[0] * 0.4)
+    outerRad = int(dimensions[0] * 0.6) // 2
+    innerRad = int(dimensions[0] * 0.3) // 2
+    cornerRad = int(dimensions[0] * 0.1)
+    rectWidth = math.sqrt((cornerRad**2)*2)
+    topLeft, topRight = [centre[0] - gearRad, centre[1] - gearRad], [centre[0] + gearRad, centre[1] - gearRad]
+    bottomLeft, bottomRight = [centre[0] - gearRad, centre[1] + gearRad], [centre[0] + gearRad, centre[1] + gearRad]
+
+    # Draw outer circle
+    pygame.draw.circle(screen, scheme['text'], centre, outerRad)
+
+    # Draw straight rects
+    # Vertical
+    pygame.draw.rect(screen, scheme['text'], [centre[0] - rectWidth//2, centre[1] - gearRad, rectWidth, gearRad * 2])
+    # Horizontal
+    pygame.draw.rect(screen, scheme['text'], [centre[0] - gearRad, centre[1] - rectWidth//2, gearRad * 2, rectWidth])
+
+    # Draw polygons
+    pygame.draw.polygon(screen, scheme['text'],
+        [topRight, [topRight[0], topRight[1] + cornerRad], [bottomLeft[0] + cornerRad, bottomLeft[1]],
+        bottomLeft, [bottomLeft[0], bottomLeft[1] - cornerRad],[topRight[0] - cornerRad, topRight[1]]])
+    pygame.draw.polygon(screen, scheme['text'],
+        [topLeft, [topLeft[0], topLeft[1] + cornerRad], [bottomRight[0] - cornerRad, bottomRight[1]],
+         bottomRight, [bottomRight[0], bottomRight[1] - cornerRad], [topLeft[0] + cornerRad, topLeft[1]]])
+    """pygame.draw.polygon(screen, scheme['text'],
+                        [[topRight[0], topRight[1] + cornerRad], [bottomLeft[0] + cornerRad, bottomLeft[1]],
+                         [bottomLeft[0], bottomLeft[1] - cornerRad],
+                         [topRight[0] - cornerRad, topRight[1]]])
+    pygame.draw.polygon(screen, scheme['text'],
+                        [[topLeft[0], topLeft[1] + cornerRad], [bottomRight[0] - cornerRad, bottomRight[1]],
+                        [bottomRight[0], bottomRight[1] - cornerRad],
+                         [topLeft[0] + cornerRad, topLeft[1]]])"""
+
+    # Draw inner circle
+    pygame.draw.circle(screen, scheme['off'], centre, innerRad)
 # Classes for buttons
 class Button():
     def __init__(self, screen, font, position, dimensions, action=emptyFunc):
@@ -139,3 +178,11 @@ class Button():
 
     def draw(self, scheme, label=''):
         self.correctDraw(scheme, label)
+
+class PicButton(Button):
+    def assignDrawFunc(self, func):
+        self.drawFunc = func
+
+    def draw(self, scheme):
+        self.rectDraw(scheme, '')
+        self.drawFunc(self.screen, scheme, self.position, self.dimensions)

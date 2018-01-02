@@ -2,7 +2,7 @@
 # Variables file
 
 # Importing modules
-import csv, sys, pygame
+import csv, sys, pygame, math
 screenx, screeny = 700, 500
 
 pygame.init()

@@ -36,10 +36,8 @@ def start_menu(screen, clock, colours):
         return buttons
 
     def draw_title(screen, message='Gnome Launch!'):
-
         title_font =  pygame.font.SysFont('nasalization',50,False,True)
         text = title_font.render(message, True, scheme['text'])
-
 
         width = text.get_width() // 2
         screenx = defaultSize()[0]
@@ -48,6 +46,8 @@ def start_menu(screen, clock, colours):
 
 
     buttons = generate_buttons(screen, ('Tutorial', emptyFunc), ('Designer', emptyFunc), ('Load', emptyFunc))
+    settingsButton = PicButton(screen, font, [10, 10], [100, 100], emptyFunc)
+    settingsButton.assignDrawFunc(drawGear)
 
     def draw_buttons():
         for key, value in buttons.items():
@@ -65,6 +65,7 @@ def start_menu(screen, clock, colours):
 
         screen.fill(scheme["background"])
         draw_buttons()
+        settingsButton.draw(scheme)
         draw_title(screen)
 
         pygame.display.flip()
