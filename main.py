@@ -8,32 +8,31 @@ def main():
     def start_menu():
         pygame.display.set_caption("Gnome Launch - Start Menu")
 
-        def generate_buttons(screen, *args):
-            # Takes in a list of lists of name and action
-
+        def generate_front(screen, *args):
+            # Takes in a list of lists of name and actions
+            title_font = pygame.font.SysFont('nasalization', 50, False, True)
+            title = title_font.render('Gnome Launch!', True, scheme['text'])
+            title_height, title_width, title_buffer = title.get_height(), title.get_width(), 30
             width, height, buffer = 200, 80, 10
             screenWidth, screenHeight = defaultSize()
             amount = len(args)
+            title_startx = (screenWidth // 2) - (title_width // 2)
             startx = (screenWidth // 2) - (width // 2)
-            totalButtonHeight = (amount * height) + ((amount-1) * buffer)
+            totalButtonHeight = (amount * height) + ((amount-1) * buffer) + (title_height + title_buffer)
             starty = (screenHeight // 2) - (totalButtonHeight // 2)
+            title_package = [title, title_startx, starty]
 
             # Create dictionary and add the buttons
             buttons = {}
             for index, info in enumerate(args):
                 name, action = info
-                relY = starty + (index * (height+buffer))
+                relY = starty + (index * (height+buffer)) + (title_height + title_buffer)
                 buttons[name] = Button(screen, font, [startx, relY], [width, height], action)
-            return buttons
+            return buttons, title_package
 
-        def draw_title(screen, message='Gnome Launch!'):
-            title_font =  pygame.font.SysFont('nasalization',50,False,True)
-            text = title_font.render(message, True, scheme['text'])
-
-            width = text.get_width() // 2
-            screenx = defaultSize()[0]
-
-            screen.blit(text, [(screenx//2)-width,30])
+        def draw_title(screen, package):
+            title, x, y = package
+            screen.blit(title, [x,y])
 
         def draw_creds(screen):
             font = pygame.font.SysFont("roboto", 15, True, False)
@@ -51,7 +50,7 @@ def main():
             for key, value in buttons.items():
                 value.detect(e)
 
-        buttons = generate_buttons(screen, ('Tutorial', emptyFunc), ('Designer', emptyFunc), ('Load', emptyFunc))
+        buttons, title_package = generate_front(screen, ('Tutorial', emptyFunc), ('Designer', emptyFunc), ('Load', emptyFunc))
         settingsButton = PicButton(screen, font, [defaultSize()[0] - 60, 10], [50, 50], emptyFunc)
         settingsButton.assignDrawFunc(drawGear)
 
@@ -65,7 +64,7 @@ def main():
             screen.fill(scheme["background"])
             draw_buttons()
             settingsButton.draw(scheme)
-            draw_title(screen)
+            draw_title(screen, title_package)
             draw_creds(screen)
 
             pygame.display.flip()
