@@ -6,8 +6,6 @@ from variables import *
 
 def main():
     def start_menu():
-        pygame.display.set_caption("Gnome Launch - Start Menu")
-
         def generate_front(screen, *args):
             # Takes in a list of lists of name and actions
             title_font = pygame.font.SysFont('nasalization', 50, False, True)
@@ -51,22 +49,45 @@ def main():
                 value.detect(e)
 
         buttons, title_package = generate_front(screen, ('Tutorial', emptyFunc), ('Designer', emptyFunc), ('Load', emptyFunc))
-        settingsButton = PicButton(screen, font, [defaultSize()[0] - 60, 10], [50, 50], emptyFunc)
+        settingsButton = PicButton(screen, font, [defaultSize()[0] - 60, 10], [50, 50], settings_screen)
         settingsButton.assignDrawFunc(drawGear)
 
         # Start menu main loop
         while True:
             for e in pygame.event.get():
                 detect_buttons(e)
+                settingsButton.detect(e)
                 if e.type == pygame.QUIT:
                     pygame.quit()
 
+            pygame.display.set_caption("Gnome Launch - Start Menu")
             screen.fill(scheme["background"])
             draw_buttons()
             settingsButton.draw(scheme)
             draw_title(screen, title_package)
             draw_creds(screen)
 
+            pygame.display.flip()
+            clock.tick(60)
+
+    def settings_screen():
+        def finish():
+            return True
+
+
+        done = False
+        backButton = Button(screen, font, [defaultSize()[0] - 110, defaultSize()[1] - 50], [100, 40], finish)
+
+        # Settings main loop
+        while not done:
+            for e in pygame.event.get():
+                done = backButton.detect(e)
+                if e.type == pygame.QUIT:
+                    pygame.quit()
+
+            pygame.display.set_caption("Gnome Launch - Settings")
+            screen.fill(scheme['background'])
+            backButton.draw(scheme, 'Back')
             pygame.display.flip()
             clock.tick(60)
 

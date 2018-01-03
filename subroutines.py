@@ -54,7 +54,7 @@ def parseSettings(settings):
 
                     # Add scheme dict to colours dict
                     colours[scheme[0]] = schemeDict
-                defaultScheme = settings[currentSettingRow+1][0]
+                defaultScheme = row[2]
         return colours, defaultScheme
     except SettingsError as e:
         print(e.message)
@@ -86,6 +86,15 @@ def changeScheme(schemes, key=False):
     else:
         return schemes[key]
 
+def buttonChangeScheme(arg):
+    schemes, key = arg
+    if type(key) is not str or key not in schemes.keys():
+        print('Invalid scheme!')
+        return False
+    else:
+        return schemes[key], key
+
+# Draws the gear (used for settings symbol)
 def drawGear(screen, scheme, position, dimensions):
     # Assumes the button is square
     # Assign vars
@@ -152,10 +161,14 @@ class Button():
             self.equation = circ
             self.correctDraw = self.circDraw
 
-    def detect(self, e):
+    def detect(self, e, arg=None):
+        #print(arg)
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
-                self.action()
+                if arg == None:
+                    print("I'm running!")
+                    return self.action()
+                return self.action(arg)
 
     def rectDraw(self, scheme, label):
         # Draw rectangles
@@ -182,6 +195,7 @@ class Button():
     def draw(self, scheme, label=''):
         self.correctDraw(scheme, label)
 
+# Instead of displaying text it draws a picture
 class PicButton(Button):
     def assignDrawFunc(self, func):
         self.drawFunc = func
@@ -189,3 +203,33 @@ class PicButton(Button):
     def draw(self, scheme):
         self.rectDraw(scheme, '')
         self.drawFunc(self.screen, scheme, self.position, self.dimensions)
+
+class SettingsHandler():
+    def __init__(self, screen, font, settings, position):
+        self.screen, self.font, self.settings, self.position = screen, font, settings, position
+
+class ColourSchemes():
+    def __init__(self, screen, font, colours, current, position):
+        self.screen, self.font, self.colours, self.current, self.position = screen, font, colours, current, position
+
+    def draw(self, scheme):
+        title = self.font.render('Colour Scheme:', True, scheme['text'])
+        title_width, title_height, buffer = title.get_width(), title.get_height(), 10
+
+        self.buttons = []
+        for i in enumerate(self.colours):
+            relPos = [self.position[0] + title_width + (buffer * (i[0]+1)) + (100 * i[0]), self.position[1] + (title_height // 2) - 20]
+            self.buttons.append(Button(self.screen, self.font, relPos, [100, 40], buttonChangeScheme))
+
+        self.screen.blit(title, self.position)
+        self.tags = sorted(self.colours)
+        for index, tag in enumerate(self.tags):
+            self.buttons[index].draw(scheme, tag)
+
+    def detect(self, e):
+        for index, button in enumerate(self.buttons):
+            output = button.detect(e, [self.colours, self.tags[index]])
+            if output != None:
+                return output
+        return self.colours[self.current], self.current
+
