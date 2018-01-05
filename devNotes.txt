@@ -1,4 +1,7 @@
 Notes:
     -[x]Be sure to add check to custom colour schemes to not allow 'colour schemes' as a name.
-    -[ ]Make multiple spaceships
+    -[ ]Make multiple spaceship skins
     -[ ]Put spaceships on title screen that bounce off buttons and title
+    -[x]Use class methods/variables to track location of all ships/wells?
+        Means don't have to have a seperate variable to keep track of. Give each instance an id?
+    -[ ]Check all naming conventions func: hello_world, class: HelloWorld, vars: hello_world

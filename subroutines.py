@@ -162,11 +162,9 @@ class Button():
             self.correctDraw = self.circDraw
 
     def detect(self, e, arg=None):
-        #print(arg)
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
                 if arg == None:
-                    print("I'm running!")
                     return self.action()
                 return self.action(arg)
 
@@ -204,10 +202,6 @@ class PicButton(Button):
         self.rectDraw(scheme, '')
         self.drawFunc(self.screen, scheme, self.position, self.dimensions)
 
-class SettingsHandler():
-    def __init__(self, screen, font, settings, position):
-        self.screen, self.font, self.settings, self.position = screen, font, settings, position
-
 class ColourSchemes():
     def __init__(self, screen, font, colours, current, position):
         self.screen, self.font, self.colours, self.current, self.position = screen, font, colours, current, position
@@ -233,3 +227,119 @@ class ColourSchemes():
                 return output
         return self.colours[self.current], self.current
 
+class Spaceship():
+    def __init__(self, screen, position, components, screensize, skin='point'):
+        self.screen, self.position, self.components, self.skin = screen, position, components, skin
+        self.screensize = screensize
+    def draw(self, scheme):
+        # Default skin, point, main use for debugging.
+        if self.skin == 'point':
+            rad = 6
+            pygame.draw.circle(self.screen, scheme['outline'], [int(self.position[0]), int(self.position[1])], rad)
+            pygame.draw.circle(self.screen, scheme['text'], [int(self.position[0]), int(self.position[1])], rad-2)
+
+        self.move()
+
+    def move(self):
+        # Shift the ship into the next position
+        self.position[0] += self.components[0]
+        self.position[1] += self.components[1]
+
+    def get_wells(self):
+        # For each gravity well
+        for well_coords, well_strength in GravWell.return_positions():
+            # Convert the coordinates into a cartesian system
+            converted_well_coords = self.convert_coords(well_coords)
+            converted_ship_coords = self.convert_coords(self.position)
+
+            # If the ship is in the area of influence of a well
+            if self.in_circle(converted_well_coords, well_strength, converted_ship_coords):
+                self.change_vector(converted_well_coords, converted_ship_coords)
+
+    def detect(self):
+        self.get_wells()
+        self.get_walls()
+
+    def convert_coords(self, coords):
+        # X remains the same, Y is 'flipped'
+        return [coords[0], self.screensize[1]-coords[1]]
+
+    @staticmethod
+    def in_circle(well_coords, well_strength, ship_coords):
+        # Returns true if the ship_coords is within the circle defined by:
+        # well_coords[0]**2 + well_coords[1]**2 = well_strength**2
+
+        # Coordinates relative to the centre of the well
+        rel_ship_coords = [ship_coords[0] - well_coords[0], ship_coords[1] - well_coords[1]]
+        if rel_ship_coords[0]**2 + rel_ship_coords[1]**2 <= well_strength**2:
+            return True
+        return False
+
+    def change_vector(self, well_coords, ship_coords):
+        # Coordinates of the ship relative to the centre of the well
+        rel_ship_coords = [ship_coords[0] - well_coords[0], ship_coords[1] - well_coords[1]]
+        distance = rel_ship_coords[0]**2 + rel_ship_coords[1]**2
+        distance = math.sqrt(distance) # Will be using this in final vector equation
+
+        # +/- 1 is just a placeholder value
+        if rel_ship_coords[0] > 0:
+            self.components[0] -= 1
+        elif rel_ship_coords[0] < 0:
+            self.components[0] += 1
+
+        if rel_ship_coords[1] > 0:
+            self.components[1] += 1
+        elif rel_ship_coords[1] < 0:
+            self.components[1] -= 1
+
+    def get_walls(self):
+        for start_coords, dimensions in Wall.positions:
+            left, top = None, None
+            print(start_coords, dimensions)
+            # Check if it's on the left side
+            if self.position[0] < start_coords:
+                left = True
+            
+
+
+
+class GravWell():
+    # This will hold the positions of all instances of this class
+    positions = []
+    def __init__(self, screen, position, strength, skin='point'):
+        self.screen, self.position, self.strength, self.skin = screen, position, strength, skin
+        self.add_position_to_list()
+
+    def draw(self, scheme):
+        # Default skin, point, main use for debugging
+        if self.skin == 'point':
+            # Draw core
+            rad = 6
+            pygame.draw.circle(self.screen, scheme['outline'], self.position, rad)
+            pygame.draw.circle(self.screen, scheme['text'], self.position, rad-2)
+
+            # Draw strength ring
+            pygame.draw.circle(self.screen, scheme['outline'], self.position, self.strength, 2)
+
+    @staticmethod
+    def return_positions():
+        # returns the positions and strength of all gravity wells.
+        return GravWell.positions
+
+    def add_position_to_list(self):
+        # Adds the gravity wells position to the list, this only happens once because they don't move
+        GravWell.positions += [[self.position, self.strength]]
+
+class Wall():
+    # This will hold the positions and dimentions of all walls
+    positions = []
+    def __init__(self, screen, position, dimensions):
+        self.screen, self.position, self.dimensions = screen, position, dimensions
+        self.add_position()
+
+    def draw(self, scheme):
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], self.dimensions[0], self.dimensions[1]], 3)
+
+    def add_position(self):
+        Wall.positions.append([self.position, self.dimensions])
+        print(Wall.positions)

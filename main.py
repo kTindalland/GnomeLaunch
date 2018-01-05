@@ -48,9 +48,14 @@ def main():
             for key, value in buttons.items():
                 value.detect(e)
 
+        # Creates buttons and title and centres them
         buttons, title_package = generate_front(screen, ('Tutorial', emptyFunc), ('Designer', emptyFunc), ('Load', emptyFunc))
+        # Creates and assigns the picture to the settings button
         settingsButton = PicButton(screen, font, [defaultSize()[0] - 60, 10], [50, 50], settings_screen)
         settingsButton.assignDrawFunc(drawGear)
+
+        test_ship = Spaceship(screen, [10, 10], [0.1, 0], defaultSize())
+        test_wall = Wall(screen, [10, 10], [100, 100])
 
         # Start menu main loop
         while True:
@@ -66,6 +71,10 @@ def main():
             settingsButton.draw(scheme)
             draw_title(screen, title_package)
             draw_creds(screen)
+
+            test_wall.draw(scheme)
+            test_ship.draw(scheme)
+            test_ship.detect()
 
             pygame.display.flip()
             clock.tick(60)
