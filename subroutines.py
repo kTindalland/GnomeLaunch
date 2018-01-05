@@ -162,11 +162,9 @@ class Button():
             self.correctDraw = self.circDraw
 
     def detect(self, e, arg=None):
-        #print(arg)
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
                 if arg == None:
-                    print("I'm running!")
                     return self.action()
                 return self.action(arg)
 
@@ -204,10 +202,7 @@ class PicButton(Button):
         self.rectDraw(scheme, '')
         self.drawFunc(self.screen, scheme, self.position, self.dimensions)
 
-class SettingsHandler():
-    def __init__(self, screen, font, settings, position):
-        self.screen, self.font, self.settings, self.position = screen, font, settings, position
-
+# Draws the colour scheme part of settings
 class ColourSchemes():
     def __init__(self, screen, font, colours, current, position):
         self.screen, self.font, self.colours, self.current, self.position = screen, font, colours, current, position
@@ -233,3 +228,9 @@ class ColourSchemes():
                 return output
         return self.colours[self.current], self.current
 
+class Spaceship():
+    def __init__(self, screen, position, components, skin='saucer'):
+        self.screen, self.position, self.components, self.skin = screen, position, components, skin
+    def draw(self, scheme):
+        if self.skin == 'saucer':
+            pygame.draw.ellipse(self.screen, scheme['off'], [self.position[0]-25, self.position[1]-20, 50, 20])
