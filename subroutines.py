@@ -57,7 +57,7 @@ def startupPygame(caption='Gnome Launch', size=[700,500]):
     return [screen, clock]
 
 
-def startMenu():
+def startMenu(font):
 
     screen, clock = startupPygame('Gnome Launch - Start Menu')
 
@@ -67,13 +67,38 @@ def startMenu():
     scheme = colourPackage[0][defaultColourScheme]
     done = False
 
+    generateButtonsAndTitle(screen, [700, 500], font, scheme, ['Tutorial', 'Level Designer', 'Load Level'], 'Gnome Launch')
+
     while not done:
+        buttons = generateButtonsAndTitle(screen, [700, 500], font, scheme,
+                                          ['Tutorial', 'Level Designer', 'Load Level'],
+                                          'GNOME LAUNCH')
         for e in pygame.event.get():
+            for key, value in buttons.items():
+                value.detect(e)
             if e.type == pygame.QUIT:
                 pygame.quit()
         screen.fill(scheme['background'])
+
+        for key, value in buttons.items():
+            value.draw(scheme, key)
+
         pygame.display.flip()
         clock.tick(60)
+
+def generateButtonsAndTitle(screen, screensize, font, scheme, buttonNames, title):
+    titleFont = pygame.font.SysFont('NasalizationRg-Regular', 50, False, True)
+    renderedTitle = titleFont.render(title, True, scheme['text'])
+
+    titleHeight, titleWidth = renderedTitle.get_height(), renderedTitle.get_width()
+
+    buttons = {}
+
+    for index, button in enumerate(buttonNames):
+        buttons[button] = Button(screen, font, [10, 10+(index*50)], [100, 40])
+
+    screen.blit(renderedTitle, [screensize[0]//2 - titleWidth//2, 10])
+    return buttons
 
 
 class Button():
@@ -103,8 +128,7 @@ class Button():
     def detect(self, e):
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
-                #self.action()
-                pass
+                self.state = not self.state
 
     def rectDraw(self, scheme, label):
         drawCol = scheme['off']
