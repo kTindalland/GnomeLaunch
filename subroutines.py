@@ -28,6 +28,15 @@ def hexcodeToRGB(hexcode):
         RGBCol.append(int(hexcode[i:i+2], 16))
     return RGBCol
 
+def RGBToHexcode(*args):
+    hexcode = ''
+    for col in args:
+        newSection = hex(col)[2:]
+        if len(newSection) < 2:
+            newSection += '0'
+        hexcode += newSection
+    return hexcode
+
 def parseSettings(settings):
     for line in settings:
         if line[0] == 'colour schemes':
@@ -200,8 +209,6 @@ def settingsScreen(font, screen, clock):
 
     colSchemeTextCoords, colSchemeButtons = genColourSchemeSettings(screen, scheme, font, [10,50], [100, 40], colourPackage)
 
-    print(type(colourPackage[0].keys()))
-
     backButton = Button(screen, font, [590, 10], [100, 40])
 
     while not done:
@@ -233,6 +240,7 @@ def settingsScreen(font, screen, clock):
 
         pygame.display.flip()
         clock.tick(60)
+    writeSettings(colourPackage)
 
 def genColourSchemeSettings(screen, scheme, font, position, buttonSize, colourPackage):
     text = font.render('Colour scheme:', True, scheme['text']) # For measuring purposes.
@@ -261,6 +269,26 @@ def drawText(screen, scheme, font, theString, coords):
 def changeColPackage(newScheme, oldColourPackage):
     oldColourPackage[1] = newScheme
     return newScheme, oldColourPackage
+
+def writeSettings(colourPackage):
+    colSchemeLines = writeColSchemes(colourPackage)
+    with open('settings.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        for line in colSchemeLines:
+            writer.writerow(line)
+
+def writeColSchemes(colourPackage):
+    lines = [['colour schemes', len(colourPackage[0]), colourPackage[1]]]
+    for schemeName, scheme in colourPackage[0].items():
+        # [Name, Background, Outline, On, Off, Text]
+        newLine = [schemeName]
+        elements = ['background', 'outline', 'on', 'off', 'text']
+        for element in elements:
+            colour = scheme[element]
+            newLine.append(RGBToHexcode(colour[0], colour[1], colour[2]))
+        lines.append(newLine)
+    return lines
+
 
 class Button():
     def __init__(self, screen, font, position, dimensions):
