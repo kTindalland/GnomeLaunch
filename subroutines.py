@@ -1,7 +1,7 @@
 # Gnome Launch
 # Subroutines
 
-import csv, pygame
+import csv, pygame, math
 
 def importRawSettings(filename='settings.csv'):
     # Read and return raw settings data from the settings file.
@@ -61,44 +61,154 @@ def startMenu(font):
 
     screen, clock = startupPygame('Gnome Launch - Start Menu')
 
-    rawSettings = importRawSettings('settings.csv')
-    colourPackage = parseSettings(rawSettings)
-    defaultColourScheme = colourPackage[1]
-    scheme = colourPackage[0][defaultColourScheme]
     done = False
 
-    generateButtonsAndTitle(screen, [700, 500], font, scheme, ['Tutorial', 'Level Designer', 'Load Level'], 'Gnome Launch')
+    coords = generateMainBlockCoords([700, 500], ['NasalizationRg-Regular', 50, 'GNOME LAUNCH'], [3, 180, 50])
+    buttonNames = ['Tutorials', 'Level Designer', 'Load Level']
+    buttons = generateButtons(screen, font, coords[1:], buttonNames, [180, 50])
+
+    settingsButton = PicButton(screen, font, [640, 10], [50,50])
+    settingsButton.assignDrawFunc(drawGear)
+
 
     while not done:
-        buttons = generateButtonsAndTitle(screen, [700, 500], font, scheme,
-                                          ['Tutorial', 'Level Designer', 'Load Level'],
-                                          'GNOME LAUNCH')
         for e in pygame.event.get():
             for key, value in buttons.items():
                 value.detect(e)
+            settingsButton.detect(e)
             if e.type == pygame.QUIT:
                 pygame.quit()
+
+        # Import settings
+        rawSettings = importRawSettings('settings.csv')
+        colourPackage = parseSettings(rawSettings)
+        defaultColourScheme = colourPackage[1]
+        scheme = colourPackage[0][defaultColourScheme]
+
+        # Fill screen
         screen.fill(scheme['background'])
 
+        # Draw text
+        drawTitle(screen, scheme, coords[0], 'NasalizationRg-Regular', 50, 'GNOME LAUNCH')
+        drawCredits(screen, scheme, font, [5, 470])
+
+        # Draw buttons
         for key, value in buttons.items():
             value.draw(scheme, key)
+        settingsButton.draw(scheme)
+
+        # Button Logic
+        if settingsButton.state:
+            settingsScreen(font, screen, clock)
+            settingsButton.state = False
 
         pygame.display.flip()
         clock.tick(60)
 
-def generateButtonsAndTitle(screen, screensize, font, scheme, buttonNames, title):
-    titleFont = pygame.font.SysFont('NasalizationRg-Regular', 50, False, True)
-    renderedTitle = titleFont.render(title, True, scheme['text'])
 
+def generateMainBlockCoords(screensize, titleParams, buttonParams, offset=[0,0]): # titleParams = [fontName, size, title], buttonParams = [numberOfButtons, width, height]
+    titleFont = pygame.font.SysFont(titleParams[0], titleParams[1], False, True)
+    renderedTitle = titleFont.render(titleParams[2], True, (0,0,0)) # Doesn't matter what colour as it won't be drawn. Only needed for measurements.
     titleHeight, titleWidth = renderedTitle.get_height(), renderedTitle.get_width()
 
+    padding = 50
+
+    totalHeight = titleHeight + (buttonParams[0] * buttonParams[2]) + (buttonParams[0] * padding)
+
+    startingY = (screensize[1]//2) - (totalHeight//2) - offset[1]
+
+    coordList = []
+    for count in range(buttonParams[0]+1):
+        coord = [(screensize[0]//2) - (buttonParams[1]//2) + offset[0], startingY+titleHeight+(buttonParams[2]*(count-1))+(padding*(count-1))]
+        if count == 0:
+            coord = [(screensize[0]//2) - (titleWidth//2) + offset[0], startingY]
+        coordList.append(coord)
+
+    return coordList
+
+def drawTitle(screen, scheme, position, fontName, size, title):
+    font = pygame.font.SysFont(fontName, size, False, True)
+    renderedTitle = font.render(title, True, scheme['text'])
+    screen.blit(renderedTitle, position)
+
+def generateButtons(screen, font, coords, names, dimensions):
     buttons = {}
-
-    for index, button in enumerate(buttonNames):
-        buttons[button] = Button(screen, font, [10, 10+(index*50)], [100, 40])
-
-    screen.blit(renderedTitle, [screensize[0]//2 - titleWidth//2, 10])
+    for index, buttonName in enumerate(names):
+        buttons[buttonName] = Button(screen, font, coords[index], dimensions)
     return buttons
+
+def drawCredits(screen, scheme, font, position):
+    credits = "Written by Kai Tindall"
+    credits = font.render(credits, True, scheme['text'])
+    screen.blit(credits, position)
+
+
+# Draws the gear (used for settings symbol)
+def drawGear(screen, scheme, position, dimensions):
+    # Assumes the button is square
+    # Assign vars
+    centre = [int(position[0]+(dimensions[0]//2)), int(position[1]+(dimensions[1]//2))] # Centre of the button
+    gearRad = int(dimensions[0] * 0.4)
+    outerRad = int(dimensions[0] * 0.6) // 2
+    innerRad = int(dimensions[0] * 0.3) // 2
+    cornerRad = int(dimensions[0] * 0.1)
+    rectWidth = math.sqrt((cornerRad**2)*2)
+
+    # Draw outer circle
+    pygame.draw.circle(screen, scheme['text'], centre, outerRad)
+
+    # Draw straight rects
+    # Vertical
+    pygame.draw.rect(screen, scheme['text'], [centre[0] - rectWidth//2, centre[1] - gearRad, rectWidth, gearRad * 2])
+    # Horizontal
+    pygame.draw.rect(screen, scheme['text'], [centre[0] - gearRad, centre[1] - rectWidth//2, gearRad * 2, rectWidth])
+
+    # Draw polygons
+    # Top Right -> Bottom Left
+    degs = 45 * (math.pi / 180)
+    barRad = int(math.cos(degs) * gearRad)
+    diff = int(rectWidth / 2 / math.sqrt(2))
+    # points go clockwise
+    one   = [centre[0] + barRad - diff, centre[1] - barRad - diff]
+    two   = [centre[0] + barRad + diff, centre[1] - barRad + diff]
+    three = [centre[0] - barRad + diff, centre[1] + barRad + diff]
+    four  = [centre[0] - barRad - diff, centre[1] + barRad - diff]
+    pygame.draw.polygon(screen, scheme['text'], [one, two, three, four])
+
+    # Top Left -> Bottom Right
+    # points go clockwise
+    one   = [centre[0] - barRad + diff, centre[1] - barRad - diff]
+    two   = [centre[0] + barRad + diff, centre[1] + barRad - diff]
+    three = [centre[0] + barRad - diff, centre[1] + barRad + diff]
+    four  = [centre[0] - barRad - diff, centre[1] - barRad + diff]
+    pygame.draw.polygon(screen, scheme['text'], [one, two, three, four])
+
+    # Draw inner circle
+    pygame.draw.circle(screen, scheme['off'], centre, innerRad)
+
+def settingsScreen(font, screen, clock):
+    done = False
+
+    rawSettings = importRawSettings('settings.csv')
+    colourPackage = parseSettings(rawSettings)
+    defaultColourScheme = colourPackage[1]
+    scheme = colourPackage[0][defaultColourScheme]
+
+    backButton = Button(screen, font, [10, 10], [100, 40])
+
+    while not done:
+        for e in pygame.event.get():
+            backButton.detect(e)
+            if e.type == pygame.QUIT:
+                pygame.quit()
+
+        screen.fill(scheme['background'])
+        backButton.draw(scheme, 'Back')
+        if backButton.state:
+            done = True
+            backButton.state = False
+        pygame.display.flip()
+        clock.tick(60)
 
 
 class Button():
@@ -162,3 +272,12 @@ class Button():
 
     def draw(self, scheme, label=''):
         self.correctDraw(scheme, label)
+
+# Instead of displaying text it draws a picture
+class PicButton(Button):
+    def assignDrawFunc(self, func):
+        self.drawFunc = func
+
+    def draw(self, scheme):
+        self.rectDraw(scheme, '')
+        self.drawFunc(self.screen, scheme, self.position, self.dimensions)
