@@ -85,6 +85,9 @@ def startMenu(font):
         defaultColourScheme = colourPackage[1]
         scheme = colourPackage[0][defaultColourScheme]
 
+        # Reset caption after other screens have been visited
+        pygame.display.set_caption('Gnome Launch - Main Menu')
+
         # Fill screen
         screen.fill(scheme['background'])
 
@@ -189,16 +192,30 @@ def drawGear(screen, scheme, position, dimensions):
 def settingsScreen(font, screen, clock):
     done = False
 
+    pygame.display.set_caption('Gnome Launch - Settings Screen')
     rawSettings = importRawSettings('settings.csv')
     colourPackage = parseSettings(rawSettings)
     defaultColourScheme = colourPackage[1]
     scheme = colourPackage[0][defaultColourScheme]
 
-    backButton = Button(screen, font, [10, 10], [100, 40])
+    colSchemeTextCoords, colSchemeButtons = genColourSchemeSettings(screen, scheme, font, [10,50], [100, 40], colourPackage)
+
+    print(type(colourPackage[0].keys()))
+
+    backButton = Button(screen, font, [590, 10], [100, 40])
 
     while not done:
         for e in pygame.event.get():
             backButton.detect(e)
+
+            for key, value in colSchemeButtons.items():
+                if value.detect(e):
+                    for key2, value2 in colSchemeButtons.items():
+                        value2.state = False
+                    value.state = True
+                    newSchemeName, colourPackage = changeColPackage(key, colourPackage)
+                    scheme = colourPackage[0][newSchemeName]
+
             if e.type == pygame.QUIT:
                 pygame.quit()
 
@@ -207,9 +224,43 @@ def settingsScreen(font, screen, clock):
         if backButton.state:
             done = True
             backButton.state = False
+
+        drawText(screen, scheme, font, 'Colour scheme:', colSchemeTextCoords) # Draws colScheme label
+
+        for key, value in colSchemeButtons.items():
+            value.draw(scheme, key)
+
+
         pygame.display.flip()
         clock.tick(60)
 
+def genColourSchemeSettings(screen, scheme, font, position, buttonSize, colourPackage):
+    text = font.render('Colour scheme:', True, scheme['text']) # For measuring purposes.
+    text_width, text_height = text.get_width(), text.get_height()
+    padding = 10
+
+    textCoords = [position[0], position[1]-(text_height//2)]
+    buttons = {}
+
+    keys = [] # Keeps the colour schemes in alphabetical order
+    for key, value in sorted(colourPackage[0].items()):
+        keys.append(key)
+
+    for index, name in enumerate(keys):
+        buttonCoords = [position[0]+text_width+(padding*(index+1))+(buttonSize[0]*index), position[1]-(buttonSize[1]//2)]
+        buttons[name] = Button(screen, font, buttonCoords, buttonSize)
+        if name == colourPackage[1]:
+            buttons[name].state = True
+
+    return textCoords, buttons
+
+def drawText(screen, scheme, font, theString, coords):
+    text = font.render(theString, True, scheme['text'])
+    screen.blit(text, coords)
+
+def changeColPackage(newScheme, oldColourPackage):
+    oldColourPackage[1] = newScheme
+    return newScheme, oldColourPackage
 
 class Button():
     def __init__(self, screen, font, position, dimensions):
@@ -239,6 +290,8 @@ class Button():
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
                 self.state = not self.state
+                return True
+        return False
 
     def rectDraw(self, scheme, label):
         drawCol = scheme['off']
