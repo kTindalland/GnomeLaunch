@@ -33,7 +33,7 @@ def RGBToHexcode(*args):
     for col in args:
         newSection = hex(col)[2:]
         if len(newSection) < 2:
-            newSection += '0'
+            newSection = '0' + newSection
         hexcode += newSection
     return hexcode
 
@@ -113,6 +113,10 @@ def startMenu(font):
         if settingsButton.state:
             settingsScreen(font, screen, clock)
             settingsButton.state = False
+
+        if buttons['Level Designer'].state:
+            levelDesigner(font, screen, clock)
+            buttons['Level Designer'].state = False
 
         pygame.display.flip()
         clock.tick(60)
@@ -288,6 +292,25 @@ def writeColSchemes(colourPackage):
             newLine.append(RGBToHexcode(colour[0], colour[1], colour[2]))
         lines.append(newLine)
     return lines
+
+def levelDesigner(font, screen, clock):
+    done = False
+
+    pygame.display.set_caption('Gnome Launch - Settings Screen')
+    rawSettings = importRawSettings('settings.csv')
+    colourPackage = parseSettings(rawSettings)
+    defaultColourScheme = colourPackage[1]
+    scheme = colourPackage[0][defaultColourScheme]
+
+    while not done:
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                pygame.quit()
+
+        screen.fill(scheme['background'])
+        pygame.display.flip()
+        clock.tick(60)
+
 
 
 class Button():
