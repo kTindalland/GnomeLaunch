@@ -95,7 +95,7 @@ def startMenu(font):
         scheme = colourPackage[0][defaultColourScheme]
 
         # Reset caption after other screens have been visited
-        pygame.display.set_caption('Gnome Launch - Main Menu')
+        pygame.display.set_caption('Gnome Launch - Start Menu')
 
         # Fill screen
         screen.fill(scheme['background'])
@@ -115,10 +115,11 @@ def startMenu(font):
             settingsButton.state = False
 
         if buttons['Level Designer'].state:
-            levelDesigner(font, screen, clock)
+            levelDesigner(font)
             buttons['Level Designer'].state = False
 
         pygame.display.flip()
+        screen, clock = startupPygame('Gnome Launch - Start Menu')
         clock.tick(60)
 
 
@@ -293,10 +294,23 @@ def writeColSchemes(colourPackage):
         lines.append(newLine)
     return lines
 
-def levelDesigner(font, screen, clock):
+def levelDesigner(font):
     done = False
+    screensize = [950, 550]
+    screen, clock = startupPygame('', screensize)
 
-    pygame.display.set_caption('Gnome Launch - Settings Screen')
+    backButton = Button(screen, font, [550,5], [125, 40])
+    button1 = Button(screen, font, [25, 5], [125, 40])
+    button2 = Button(screen, font, [200, 5], [125, 40])
+    button3 = Button(screen, font, [375, 5], [125, 40])
+
+    testPlayer = Player(screen, 5.972*(10**18), [50, 100], [0, 0], [0,50,700,550])
+    testWell = Well(screen, [200,200], 10, 1.989*(10**31))
+
+    testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
+    testWell = Well(screen, [250, 200], 10, 1000000000000)
+
+    pygame.display.set_caption('Gnome Launch - Level Designer')
     rawSettings = importRawSettings('settings.csv')
     colourPackage = parseSettings(rawSettings)
     defaultColourScheme = colourPackage[1]
@@ -304,12 +318,31 @@ def levelDesigner(font, screen, clock):
 
     while not done:
         for e in pygame.event.get():
+            if backButton.detect(e):
+                done = True
             if e.type == pygame.QUIT:
                 pygame.quit()
 
         screen.fill(scheme['background'])
+        backButton.draw(scheme, 'Back')
+        button1.draw(scheme, 'Button1')
+        button2.draw(scheme, 'Button2')
+        button3.draw(scheme, 'Button3')
+        drawGuideLines(screen, scheme)
+
+        testPlayer.draw(scheme)
+        testWell.draw(scheme, testPlayer)
+
+        print(testPlayer.vComps)
+
         pygame.display.flip()
         clock.tick(60)
+
+
+def drawGuideLines(screen, scheme):
+    pygame.draw.line(screen, scheme['outline'], [700, 0], [700, 550], 2)
+    pygame.draw.line(screen, scheme['outline'], [0, 50], [700, 50], 2)
+    pygame.draw.rect(screen, scheme['outline'], [0,0, 950, 550], 2)
 
 
 
@@ -385,3 +418,70 @@ class PicButton(Button):
     def draw(self, scheme):
         self.rectDraw(scheme, '')
         self.drawFunc(self.screen, scheme, self.position, self.dimensions)
+
+class Player():
+    def __init__(self, screen, mass, startCoords, vectorComps, range=[0,0,700,500]):
+        self.screen, self.coords, self.vComps = screen, startCoords, vectorComps
+        self.range, self.mass = range, mass
+
+    def draw(self, scheme):
+        pygame.draw.circle(self.screen, scheme['text'], [int(self.coords[0]), int(self.coords[1])], 5)
+        self.move()
+
+    def move(self):
+        self.coords = [self.coords[0]+self.vComps[0], self.coords[1]+self.vComps[1]]
+        self.check()
+
+    def check(self):
+        if self.coords[0] < self.range[0]:
+            self.coords[0] = self.range[0]
+            self.vComps[0] *= -1
+        if self.coords[1] < self.range[1]:
+            self.coords[1] = self.range[1]
+            self.vComps[1] *= -1
+        if self.coords[0] > self.range[2]:
+            self.coords[0] = self.range[2]
+            self.vComps[0] *= -1
+        if self.coords[1] > self.range[3]:
+            self.coords[1] = self.range[3]
+            self.vComps[1] *= -1
+
+
+class Well():
+    def __init__(self, screen, position, size, mass):
+        self.screen, self.position, self.mass = screen, position, mass
+        self.size = size
+
+    def draw(self, scheme, player):
+        pygame.draw.circle(self.screen, scheme['text'], self.position, self.size)
+        self.calc(player)
+
+    def calc(self, player):
+        dx = abs(self.position[0] - player.coords[0])
+        dy = abs(self.position[1] - player.coords[1])
+        theta = math.atan(dy/dx)
+
+        G = 6.67 * (10**-11)
+        r = math.sqrt((dx**2)+(dy**2))
+        if r < self.size:
+            r = self.size
+
+        g = (-G*self.mass)/(r**2)
+        Fx = g*math.cos(theta)
+        Fy = g * math.sin(theta)
+
+        ax = abs(Fx / player.mass)
+        ay = abs(Fy / player.mass)
+
+        # Check where player is in relation to well
+        # Is player below
+        if player.coords[1] > self.position[1]:
+            ay *= -1
+            print('below')
+        # Is player to the right
+        if player.coords[0] > self.position[0]:
+            ax *= -1
+            print('right')
+
+        player.vComps[0] += ax
+        player.vComps[1] += ay
