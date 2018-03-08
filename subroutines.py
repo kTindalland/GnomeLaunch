@@ -304,11 +304,14 @@ def levelDesigner(font):
     button2 = Button(screen, font, [200, 5], [125, 40])
     button3 = Button(screen, font, [375, 5], [125, 40])
 
-    testPlayer = Player(screen, 5.972*(10**18), [50, 100], [0, 0], [0,50,700,550])
-    testWell = Well(screen, [200,200], 10, 1.989*(10**31))
+    Y = 45
+    names = ['Player Area', 'Gravity Well', 'Goal Area', 'Wall']
+    toolboxCoords = [[725, Y+((50+30)*i)] for i in range(len(names))]
+    toolboxButtons = createToolboxButtons(screen, font, toolboxCoords, names, [200, 50])
 
     testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
     testWell = Well(screen, [250, 200], 10, 1000000000000)
+    drawTest = False
 
     pygame.display.set_caption('Gnome Launch - Level Designer')
     rawSettings = importRawSettings('settings.csv')
@@ -330,10 +333,17 @@ def levelDesigner(font):
         button3.draw(scheme, 'Button3')
         drawGuideLines(screen, scheme)
 
-        testPlayer.draw(scheme)
-        testWell.draw(scheme, testPlayer)
+        # Testing instances.
+        if drawTest:
+            testPlayer.draw(scheme)
+            testWell.draw(scheme, testPlayer)
 
-        print(testPlayer.vComps)
+        # Draw toolbox title
+        drawToolbarTitle(screen, font, scheme)
+
+        # Draw toolbox buttons
+        for key, value in toolboxButtons.items():
+            value.draw(scheme, key)
 
         pygame.display.flip()
         clock.tick(60)
@@ -344,6 +354,21 @@ def drawGuideLines(screen, scheme):
     pygame.draw.line(screen, scheme['outline'], [0, 50], [700, 50], 2)
     pygame.draw.rect(screen, scheme['outline'], [0,0, 950, 550], 2)
 
+
+def drawToolbarTitle(screen, font, scheme):
+    font.set_underline(True)
+    title = font.render('Toolbox', True, scheme['text']) # Draw Pannel, Toolbox, Select Tool
+    width = title.get_width()
+    font.set_underline(False)
+    startX, spaceWidth = 700, 250
+    screen.blit(title, [startX + ((spaceWidth//2)-(width//2)), 10])
+
+
+def createToolboxButtons(screen, font, coords, names, dimensions):
+    buttons = {}
+    for index, name in enumerate(names):
+        buttons[name] = Button(screen, font, coords[index], dimensions)
+    return buttons
 
 
 class Button():
@@ -477,11 +502,9 @@ class Well():
         # Is player below
         if player.coords[1] > self.position[1]:
             ay *= -1
-            print('below')
         # Is player to the right
         if player.coords[0] > self.position[0]:
             ax *= -1
-            print('right')
 
         player.vComps[0] += ax
         player.vComps[1] += ay
