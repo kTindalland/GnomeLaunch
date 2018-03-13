@@ -313,6 +313,8 @@ def levelDesigner(font):
     testWell = Well(screen, [250, 200], 10, 1000000000000)
     drawTest = False
 
+    ts = Toggle_Switch(screen, font, [0, 50], [200, 400], 0)
+
     pygame.display.set_caption('Gnome Launch - Level Designer')
     rawSettings = importRawSettings('settings.csv')
     colourPackage = parseSettings(rawSettings)
@@ -321,6 +323,7 @@ def levelDesigner(font):
 
     while not done:
         for e in pygame.event.get():
+            ts.detect(e)
             if backButton.detect(e):
                 done = True
             if e.type == pygame.QUIT:
@@ -337,6 +340,7 @@ def levelDesigner(font):
         if drawTest:
             testPlayer.draw(scheme)
             testWell.draw(scheme, testPlayer)
+        ts.draw(scheme)
 
         # Draw toolbox title
         drawToolbarTitle(screen, font, scheme)
@@ -508,3 +512,46 @@ class Well():
 
         player.vComps[0] += ax
         player.vComps[1] += ay
+
+
+class Toggle_Switch():
+    def __init__(self, screen, font, position, dimensions, default):
+        self.screen, self.font, self.position, self.dimensions, self.state = screen, font, position, dimensions, default
+        self.blockWidth = self.dimensions[0] * 0.4
+        self.blockEnds = [0, self.dimensions[0] * 0.6]
+        self.goal = self.blockEnds[self.state]
+        self.blockX = self.goal
+        self.speed = 7
+
+
+    def draw(self, scheme):
+        pygame.draw.rect(self.screen, scheme['on'], [self.position[0]+ self.blockX, self.position[1], self.blockWidth, self.dimensions[1]])
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[1] + self.blockX, self.position[1], self.blockWidth, self.dimensions[1]], 3)
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], self.dimensions[0], self.dimensions[1]], 3)
+        self.move()
+
+
+    def detect(self, e):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            mpos = pygame.mouse.get_pos()
+            if self.position[0] <= mpos[0] <= (self.position[0]+self.dimensions[0]):
+                if self.position[1] <= mpos[1] <= (self.position[1] + self.dimensions[1]):
+                    if self.state:
+                        self.state = 0
+                    else:
+                        self.state = 1
+                    self.goal = self.blockEnds[self.state]
+
+
+    def move(self):
+        if self.goal != self.blockX:
+            temp = self.goal - self.blockX
+            change = temp // abs(temp)
+            change *= self.speed
+            # Need to validate coords.
+            self.blockX += change
+            if self.blockX < self.blockEnds[0]:
+                self.blockX = self.blockEnds[0]
+            if self.blockX > self.blockEnds[1]:
+                self.blockX = self.blockEnds[1]
+
