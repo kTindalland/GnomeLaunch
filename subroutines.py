@@ -369,6 +369,15 @@ def levelDesigner(font):
                                     mpos = pygame.mouse.get_pos()
                                     levelEntities[key] = GoalArea(screen, levelEntities[key].origin, mpos)
                                     GoalArea.isDrawing = False
+                            if key == 'Wall':
+                                if not Wall.isDrawing:
+                                    mpos = pygame.mouse.get_pos()
+                                    levelEntities[key].append(Wall(screen, mpos))
+                                    Wall.isDrawing = True
+                                else:
+                                    mpos = pygame.mouse.get_pos()
+                                    levelEntities[key][-1] = Wall(screen, levelEntities[key][-1].origin, mpos)
+                                    Wall.isDrawing = False
 
 
 
@@ -403,6 +412,10 @@ def levelDesigner(font):
         if levelEntities['Goal Area'] != None:
             levelEntities['Goal Area'].draw(scheme)
 
+        if len(levelEntities['Wall']) > 0:
+            for i in levelEntities['Wall']:
+                i.draw(scheme)
+
         pygame.display.flip()
         clock.tick(60)
 
@@ -430,6 +443,17 @@ def createToolboxButtons(screen, font, coords, names, dimensions):
             buttons[name].state = True
     return buttons
 
+
+def checkAreas(key, screen, selectedClass, levelEntities):
+    if not selectedClass.isDrawing:
+        mpos = pygame.mouse.get_pos()
+        levelEntities[key] = selectedClass(screen, mpos)
+        selectedClass.isDrawing = True
+    else:
+        mpos = pygame.mouse.get_pos()
+        levelEntities[key] = selectedClass(screen, levelEntities[key].origin, mpos)
+        selectedClass.isDrawing = False
+    return levelEntities
 
 class Button():
     def __init__(self, screen, font, position, dimensions):
@@ -645,6 +669,7 @@ class LabelToggleSwitch(ToggleSwitch):
         return 'LabelToggleSwitch'
 
 class Area():
+    isDrawing = False
     def __init__(self, screen, cornerOne, cornerTwo=None):
         self.screen = screen
         self.origin = cornerOne
@@ -663,7 +688,7 @@ class Area():
         return 'Area'
 
 class PlayerArea(Area):
-    isDrawing = False
+    #isDrawing = False
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['off'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
@@ -672,10 +697,15 @@ class PlayerArea(Area):
         return 'PlayerArea'
 
 class GoalArea(Area):
-    isDrawing = False
+    #isDrawing = False
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['on'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
 
     def identity(self):
         return 'GoalArea'
+
+class Wall(Area):
+    def draw(self, scheme):
+        super().draw()
+        pygame.draw.rect(self.screen, scheme['outline'], [self.origin[0], self.origin[1], self.dx, self.dy])
