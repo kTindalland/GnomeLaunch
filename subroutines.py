@@ -352,23 +352,9 @@ def levelDesigner(font):
                                 temp = Well(screen, mpos, 10, 10**12)
                                 levelEntities[key].append(temp)
                             if key == 'Player Area':
-                                if not PlayerArea.isDrawing:
-                                    mpos = pygame.mouse.get_pos()
-                                    levelEntities[key] = PlayerArea(screen, mpos)
-                                    PlayerArea.isDrawing = True
-                                else:
-                                    mpos = pygame.mouse.get_pos()
-                                    levelEntities[key] = PlayerArea(screen, levelEntities[key].origin, mpos)
-                                    PlayerArea.isDrawing = False
+                                levelEntities = checkAreas(key, screen, PlayerArea, levelEntities)
                             if key == 'Goal Area':
-                                if not GoalArea.isDrawing:
-                                    mpos = pygame.mouse.get_pos()
-                                    levelEntities[key] = GoalArea(screen, mpos)
-                                    GoalArea.isDrawing = True
-                                else:
-                                    mpos = pygame.mouse.get_pos()
-                                    levelEntities[key] = GoalArea(screen, levelEntities[key].origin, mpos)
-                                    GoalArea.isDrawing = False
+                                levelEntities = checkAreas(key, screen, GoalArea, levelEntities)
                             if key == 'Wall':
                                 if not Wall.isDrawing:
                                     mpos = pygame.mouse.get_pos()
@@ -684,11 +670,14 @@ class Area():
             cornerTwo = pygame.mouse.get_pos()
             self.dx, self.dy = cornerTwo[0] - self.origin[0], cornerTwo[1] - self.origin[1]
 
+    def detect(self, e):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            pass
+
     def identity(self):
         return 'Area'
 
 class PlayerArea(Area):
-    #isDrawing = False
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['off'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
@@ -697,7 +686,6 @@ class PlayerArea(Area):
         return 'PlayerArea'
 
 class GoalArea(Area):
-    #isDrawing = False
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['on'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
