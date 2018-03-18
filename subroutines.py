@@ -2,6 +2,7 @@
 # Subroutines
 
 import csv, pygame, math
+from textbox import Textbox
 
 def importRawSettings(filename='settings.csv'):
     # Read and return raw settings data from the settings file.
@@ -316,7 +317,8 @@ def levelDesigner(font):
     toolboxButtons = createToolboxButtons(screen, font, toolboxCoords, names, [200, 50])
 
     testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
-    #testWell = Well(screen, [250, 200], 10, 1000000000000)
+    testWell = Well(screen, font, [250, 200], 10, 1000000000000)
+    testTextbox = Textbox([screen, 0, font], [100, 100], [200, 50])
     drawTest = False
 
     ts = LabelToggleSwitch(screen, font, [725,550-50-25], [200, 50], 0)
@@ -330,6 +332,7 @@ def levelDesigner(font):
     while not done:
         for e in pygame.event.get():
             ts.detect(e)
+            testTextbox.detect(e)
             if backButton.detect(e):
                 done = True
 
@@ -383,6 +386,7 @@ def levelDesigner(font):
             testPlayer.draw(scheme)
             testWell.draw(scheme, testPlayer)
         ts.draw(scheme, ['Draw', 'Select'])
+        testTextbox.draw(scheme)
 
         # Draw toolbox title
         drawToolbarTitle(screen, font, scheme)
