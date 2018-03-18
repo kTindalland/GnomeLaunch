@@ -316,7 +316,7 @@ def levelDesigner(font):
     toolboxButtons = createToolboxButtons(screen, font, toolboxCoords, names, [200, 50])
 
     testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
-    testWell = Well(screen, [250, 200], 10, 1000000000000)
+    #testWell = Well(screen, [250, 200], 10, 1000000000000)
     drawTest = False
 
     ts = LabelToggleSwitch(screen, font, [725,550-50-25], [200, 50], 0)
@@ -342,14 +342,14 @@ def levelDesigner(font):
             if e.type == pygame.QUIT:
                 pygame.quit()
 
-            if not ts.state and e.type == pygame.MOUSEBUTTONDOWN: # If drawing
-                mpos = pygame.mouse.get_pos()
-                if 0 <= mpos[0] <= 700 and 50 <= mpos[1] <= 550: # If in game space
+            mpos = pygame.mouse.get_pos()
+            if 0 <= mpos[0] <= 700 and 50 <= mpos[1] <= 550:  # If in game space
+                if not ts.state and e.type == pygame.MOUSEBUTTONDOWN: # If drawing
                     for key, value in toolboxButtons.items():
                         if value.state:
                             print(key)
                             if key == 'Gravity Well': # If Gravity Well selected
-                                temp = Well(screen, mpos, 10, 10**12)
+                                temp = Well(screen, font, mpos, 10, 10**12)
                                 levelEntities[key].append(temp)
                             if key == 'Player Area':
                                 levelEntities = checkAreas(key, screen, PlayerArea, levelEntities)
@@ -364,6 +364,9 @@ def levelDesigner(font):
                                     mpos = pygame.mouse.get_pos()
                                     levelEntities[key][-1] = Wall(screen, levelEntities[key][-1].origin, mpos)
                                     Wall.isDrawing = False
+                else: # If selecting
+                    for i in levelEntities['Gravity Well']:
+                        i.detect(e)
 
 
 
@@ -388,9 +391,14 @@ def levelDesigner(font):
         for key, value in toolboxButtons.items():
             value.draw(scheme, key)
 
+        selected = False
+
         if len(levelEntities['Gravity Well']) > 0:
             for i in levelEntities['Gravity Well']:
-                i.draw(scheme, None)
+                if not i.selected:
+                    i.draw(scheme, None)
+                    continue
+                selected = i
 
         if levelEntities['Player Area'] != None:
             levelEntities['Player Area'].draw(scheme)
@@ -401,6 +409,10 @@ def levelDesigner(font):
         if len(levelEntities['Wall']) > 0:
             for i in levelEntities['Wall']:
                 i.draw(scheme)
+
+        if selected != False: # Making sure selectdd is drawn last
+            if selected.identity() == 'Well':
+                selected.draw(scheme, None)
 
         pygame.display.flip()
         clock.tick(60)
@@ -552,14 +564,49 @@ class Player():
 
 
 class Well():
-    def __init__(self, screen, position, size, mass):
+    def __init__(self, screen, font, position, size, mass):
         self.screen, self.position, self.mass = screen, position, mass
         self.size = size
+        self.font = font
+        self.selected = False
 
     def draw(self, scheme, player):
         pygame.draw.circle(self.screen, scheme['text'], self.position, self.size)
         if player != None:
             self.calc(player)
+        if self.selected:
+            self.drawSelectBox(scheme)
+
+    def detect(self, e):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            mpos = pygame.mouse.get_pos()
+            dx, dy = mpos[0] - self.position[0], mpos[1] - self.position[1]
+            self.selected = False
+            if dx**2 + dy**2 <= self.size**2:
+                self.selected = True
+
+    def drawSelectBox(self, scheme):
+        self.font.set_underline(True)
+        title = self.font.render('Gravity Well', True, scheme['text'])
+        self.font.set_underline(False)
+        massTag = self.font.render('Mass:', True, scheme['text'])
+        sizeTag = self.font.render('Size:', True, scheme['text'])
+        massWidth, sizeWidth = massTag.get_width(), sizeTag.get_width()
+        longTag = max(massWidth, sizeWidth)
+
+        width = -(270 + longTag)
+        height = -(180 + title.get_height())
+
+        # Check if there's space
+        if self.position[0] + width < 0:
+            width *= -1
+        if self.position[1] + height < 50:
+            height *= -1
+
+        pygame.draw.rect(self.screen, scheme['background'], [self.position[0], self.position[1], width, height])
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], width, height], 3)
+
+
 
     def calc(self, player):
         dx = abs(self.position[0] - player.coords[0])
@@ -670,9 +717,6 @@ class Area():
             cornerTwo = pygame.mouse.get_pos()
             self.dx, self.dy = cornerTwo[0] - self.origin[0], cornerTwo[1] - self.origin[1]
 
-    def detect(self, e):
-        if e.type == pygame.MOUSEBUTTONDOWN:
-            pass
 
     def identity(self):
         return 'Area'
