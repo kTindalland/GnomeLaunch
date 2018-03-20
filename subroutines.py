@@ -318,7 +318,6 @@ def levelDesigner(font):
 
     testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
     testWell = Well(screen, font, [250, 200], 10, 1000000000000)
-    testTextbox = Textbox([screen, 0, font], [100, 100], [200, 50])
     drawTest = False
 
     ts = LabelToggleSwitch(screen, font, [725,550-50-25], [200, 50], 0)
@@ -332,7 +331,6 @@ def levelDesigner(font):
     while not done:
         for e in pygame.event.get():
             ts.detect(e)
-            testTextbox.detect(e)
             if backButton.detect(e):
                 done = True
 
@@ -350,7 +348,6 @@ def levelDesigner(font):
                 if not ts.state and e.type == pygame.MOUSEBUTTONDOWN: # If drawing
                     for key, value in toolboxButtons.items():
                         if value.state:
-                            print(key)
                             if key == 'Gravity Well': # If Gravity Well selected
                                 temp = Well(screen, font, mpos, 10, 10**12)
                                 levelEntities[key].append(temp)
@@ -370,6 +367,12 @@ def levelDesigner(font):
                 else: # If selecting
                     for i in levelEntities['Gravity Well']:
                         i.detect(e)
+                    for i in levelEntities['Wall']:
+                        i.detect(e)
+                    if levelEntities['Player Area'] != None:
+                        levelEntities['Player Area'].detect(e)
+                    if levelEntities['Goal Area'] != None:
+                        levelEntities['Goal Area'].detect(e)
 
 
 
@@ -386,7 +389,6 @@ def levelDesigner(font):
             testPlayer.draw(scheme)
             testWell.draw(scheme, testPlayer)
         ts.draw(scheme, ['Draw', 'Select'])
-        testTextbox.draw(scheme)
 
         # Draw toolbox title
         drawToolbarTitle(screen, font, scheme)
@@ -399,6 +401,9 @@ def levelDesigner(font):
 
         if len(levelEntities['Gravity Well']) > 0:
             for i in levelEntities['Gravity Well']:
+                if i.TBD:
+                    del i
+                    continue
                 if not i.selected:
                     i.draw(scheme, None)
                     continue
@@ -406,17 +411,25 @@ def levelDesigner(font):
 
         if levelEntities['Player Area'] != None:
             levelEntities['Player Area'].draw(scheme)
+            if levelEntities['Player Area'].TBD:
+                levelEntities['Player Area'] = None
 
         if levelEntities['Goal Area'] != None:
             levelEntities['Goal Area'].draw(scheme)
+            if levelEntities['Goal Area'].TBD:
+                levelEntities['Goal Area'] = None
 
         if len(levelEntities['Wall']) > 0:
             for i in levelEntities['Wall']:
+                if i.TBD:
+                    del i
+                    continue
                 i.draw(scheme)
 
         if selected != False: # Making sure selectdd is drawn last
             if selected.identity() == 'Well':
                 selected.draw(scheme, None)
+
 
         pygame.display.flip()
         clock.tick(60)
@@ -573,6 +586,41 @@ class Well():
         self.size = size
         self.font = font
         self.selected = False
+        self.defaults = [mass, size]
+        self.TBD = False # To Be Deleted
+
+        self.font.set_underline(True)
+        title = self.font.render('Gravity Well', True, (0,0,0))
+        self.font.set_underline(False)
+        massTag = self.font.render('Mass:', True, (0,0,0))
+        sizeTag = self.font.render('Size:', True, (0,0,0))
+        massWidth, sizeWidth = massTag.get_width(), sizeTag.get_width()
+        self.longTag = max(massWidth, sizeWidth)
+
+        width = -(270 + self.longTag)
+        height = -(180 + title.get_height())
+        self.startcoords = [self.position[0] + width, self.position[1] + height]
+
+        # Check if there's space
+        if self.position[0] + width < 0:  # if not enough space to left
+            width *= -1  # set right
+            self.startcoords[0] = self.position[0]
+        if self.position[1] + height < 50:  # if not enough space up
+            height *= -1  # set down
+            self.startcoords[1] = self.position[1]
+
+        self.__width = width
+        self.__height = height
+        startcoords = self.startcoords
+
+        self.__massBox = Textbox([self.screen, 0, self.font],
+                                 [startcoords[0] + 40 + self.longTag, startcoords[1] + 20 + title.get_height()], [200, 50],
+                                 str(self.mass))
+        self.__sizeBox = Textbox([self.screen, 0, self.font],
+                                 [startcoords[0] + 40 + self.longTag, startcoords[1] + 100 + title.get_height()], [200, 50],
+                                 str(self.size))
+
+        self.delBox = Button(self.screen, self.font, [self.startcoords[0]+abs(self.__width)-80, self.startcoords[1]+10], [70, 30])
 
     def draw(self, scheme, player):
         pygame.draw.circle(self.screen, scheme['text'], self.position, self.size)
@@ -580,14 +628,42 @@ class Well():
             self.calc(player)
         if self.selected:
             self.drawSelectBox(scheme)
+        if self.delBox.state:
+            self.TBD = True
 
     def detect(self, e):
         if e.type == pygame.MOUSEBUTTONDOWN:
             mpos = pygame.mouse.get_pos()
+
             dx, dy = mpos[0] - self.position[0], mpos[1] - self.position[1]
-            self.selected = False
             if dx**2 + dy**2 <= self.size**2:
                 self.selected = True
+            elif self.selected and self.between([self.position[0], self.position[0] + self.__width],
+                                                mpos[0]) and self.between(
+                [self.position[1], self.position[1] + self.__height], mpos[1]):
+                self.selected = True
+
+            else:
+                try:
+                    self.mass = int(self.__massBox.return_input())
+                except:
+                    self.mass = self.defaults[0]
+                try:
+                    self.size = int(self.__sizeBox.return_input())
+                except:
+                    self.size = self.defaults[1]
+                self.selected = False
+        if self.__massBox != False and self.selected:
+            self.__massBox.detect(e)
+            self.__sizeBox.detect(e)
+            self.delBox.detect(e)
+
+
+
+    def between(self, limits, num):
+        if min(limits) <= num <= max(limits):
+            return True
+
 
     def drawSelectBox(self, scheme):
         self.font.set_underline(True)
@@ -595,20 +671,18 @@ class Well():
         self.font.set_underline(False)
         massTag = self.font.render('Mass:', True, scheme['text'])
         sizeTag = self.font.render('Size:', True, scheme['text'])
-        massWidth, sizeWidth = massTag.get_width(), sizeTag.get_width()
-        longTag = max(massWidth, sizeWidth)
 
-        width = -(270 + longTag)
-        height = -(180 + title.get_height())
+        pygame.draw.rect(self.screen, scheme['background'], [self.position[0], self.position[1], self.__width, self.__height])
+        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], self.__width, self.__height], 3)
+        self.__massBox.draw(scheme)
+        self.__sizeBox.draw(scheme)
+        self.delBox.draw(scheme, 'Del')
 
-        # Check if there's space
-        if self.position[0] + width < 0:
-            width *= -1
-        if self.position[1] + height < 50:
-            height *= -1
+        titleWidth, massHeight, sizeHeight = title.get_width(), massTag.get_height(), sizeTag.get_height()
 
-        pygame.draw.rect(self.screen, scheme['background'], [self.position[0], self.position[1], width, height])
-        pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], width, height], 3)
+        self.screen.blit(title, [((270+self.longTag)//2)-(titleWidth//2)+self.startcoords[0], self.startcoords[1]+10])
+        self.screen.blit(massTag, [self.startcoords[0]+10, 20 + title.get_height() + (25-(massHeight//2)) + self.startcoords[1]])
+        self.screen.blit(sizeTag, [self.startcoords[0]+10, 100 + title.get_height() + (25-(sizeHeight//2)) + self.startcoords[1]])
 
 
 
@@ -642,6 +716,7 @@ class Well():
 
     def identity(self):
         return 'Well'
+
 
 
 class ToggleSwitch():
@@ -711,6 +786,7 @@ class Area():
         self.screen = screen
         self.origin = cornerOne
         self.drawAtMouse = False
+        self.TBD = False
         if cornerTwo != None:
             self.dx, self.dy = cornerTwo[0] - cornerOne[0], cornerTwo[1] - cornerOne[1]
         else:
@@ -720,6 +796,14 @@ class Area():
         if self.drawAtMouse:
             cornerTwo = pygame.mouse.get_pos()
             self.dx, self.dy = cornerTwo[0] - self.origin[0], cornerTwo[1] - self.origin[1]
+
+    def detect(self, e):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            mpos = pygame.mouse.get_pos()
+            if Well.between(self, [self.origin[0], self.origin[0]+self.dx], mpos[0]) and Well.between(self, [self.origin[1], self.origin[1]+self.dy], mpos[1]):
+                self.TBD = True
+                return True
+        return False
 
 
     def identity(self):
@@ -745,3 +829,4 @@ class Wall(Area):
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['outline'], [self.origin[0], self.origin[1], self.dx, self.dy])
+
