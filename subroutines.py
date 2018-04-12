@@ -2,6 +2,7 @@
 # Subroutines
 
 import csv, pygame, math
+import sqlite3 as sql
 from textbox import Textbox
 
 def importRawSettings(filename='settings.csv'):
@@ -309,7 +310,7 @@ def levelDesigner(font):
     backButton = Button(screen, font, [550,5], [125, 40])
     button1 = Button(screen, font, [25, 5], [125, 40])
     button2 = Button(screen, font, [200, 5], [125, 40])
-    button3 = Button(screen, font, [375, 5], [125, 40])
+    saveButton = Button(screen, font, [375, 5], [125, 40])
 
     Y = 45 # Y displacement for toolbox
     names = ['Player Area', 'Gravity Well', 'Goal Area', 'Wall']
@@ -333,6 +334,8 @@ def levelDesigner(font):
             ts.detect(e)
             if backButton.detect(e):
                 done = True
+            if saveButton.detect(e):
+                exportLevel('test')
 
             for key, value in toolboxButtons.items():
                 if value.detect(e):
@@ -380,7 +383,7 @@ def levelDesigner(font):
         backButton.draw(scheme, 'Back')
         button1.draw(scheme, 'Button1')
         button2.draw(scheme, 'Button2')
-        button3.draw(scheme, 'Button3')
+        saveButton.draw(scheme, 'Save')
         drawGuideLines(screen, scheme)
 
 
@@ -469,6 +472,21 @@ def checkAreas(key, screen, selectedClass, levelEntities):
         levelEntities[key] = selectedClass(screen, levelEntities[key].origin, mpos)
         selectedClass.isDrawing = False
     return levelEntities
+
+
+def exportLevel(levelName, folderName=None):
+    if folderName == None:
+        path = levelName + '.db'
+    else:
+        path = folderName + '/' + levelName + '.db'
+    conn = sql.connect(path)
+    cursor = conn.cursor()
+    command = "CREATE TABLE IF NOT EXISTS testtable(id NOT_NULL INTEGER PRIMARY KEY, name NOT_NULL TEXT, value INTEGER)"
+    cursor.execute(command)
+    conn.commit()
+    conn.close()
+
+
 
 class Button():
     def __init__(self, screen, font, position, dimensions):
