@@ -335,7 +335,7 @@ def levelDesigner(font):
             if backButton.detect(e):
                 done = True
             if saveButton.detect(e):
-                exportLevel('test')
+                exportLevel('test', levelEntities)
 
             for key, value in toolboxButtons.items():
                 if value.detect(e):
@@ -474,19 +474,43 @@ def checkAreas(key, screen, selectedClass, levelEntities):
     return levelEntities
 
 
-def exportLevel(levelName, folderName=None):
+def exportLevel(levelName, levelEntities, folderName=None):
     if folderName == None:
         path = levelName + '.db'
     else:
-        path = folderName + '/' + levelName + '.db'
+        path = "\\".join(__file__.split("\\")[:-1])
+        path += "\\" + folderName + "\\" + levelName
+        print(path)
     conn = sql.connect(path)
     cursor = conn.cursor()
-    command = "CREATE TABLE IF NOT EXISTS testtable(id INTEGER PRIMARY KEY , name NOT_NULL TEXT, value INTEGER)"
-    cursor.execute(command)
-    cursor.execute("INSERT INTO testtable (name, value) VALUES ('Kai', 18)")
-    cursor.execute("SELECT * FROM testtable")
-    records = cursor.fetchall()
-    print(records)
+
+    # Execute commands
+    cursor.execute("DROP TABLE IF EXISTS gravwells")
+    cursor.execute("DROP TABLE IF EXISTS areas")
+    cursor.execute("CREATE TABLE IF NOT EXISTS gravwells (id INTEGER PRIMARY KEY, x NOT_NULL INTEGER, y NOT_NULL INTEGER, size INTEGER, mass REAL);")
+    cursor.execute("CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY, iden TEXT, x1 INTEGER, y1 INTEGER, x2 INTEGER, y2 INTEGER);")
+
+    for well in levelEntities['Gravity Well']:
+        cursor.execute("INSERT INTO gravwells (x, y, size, mass) VALUES ({}, {}, {}, {});".format(well.position[0], well.position[1], well.size, float(well.mass)))
+
+    def addArea(area):
+        if area != None:
+            cursor.execute("INSERT INTO areas (iden, x1, y1, x2, y2) VALUES ({}, {}, {}, {}, {});".format(
+                "'"+area.identity()+"'", area.origin[0], area.origin[1], area.origin[0]+area.dx, area.origin[1]+area.dy))
+        else:
+            cursor.execute("INSERT INTO areas (iden) VALUES (NULL)")
+
+    addArea(levelEntities['Player Area'])
+    addArea(levelEntities['Goal Area'])
+
+    for wall in levelEntities['Wall']:
+        addArea(wall)
+
+    cursor.execute("SELECT * FROM areas")
+    print(cursor.fetchall())
+    cursor.execute("SELECT * FROM gravwells")
+    print(cursor.fetchall())
+
     conn.commit()
     conn.close()
 
@@ -851,4 +875,7 @@ class Wall(Area):
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['outline'], [self.origin[0], self.origin[1], self.dx, self.dy])
+
+    def identity(self):
+        return 'WallArea'
 
