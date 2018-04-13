@@ -481,8 +481,12 @@ def exportLevel(levelName, folderName=None):
         path = folderName + '/' + levelName + '.db'
     conn = sql.connect(path)
     cursor = conn.cursor()
-    command = "CREATE TABLE IF NOT EXISTS testtable(id NOT_NULL INTEGER PRIMARY KEY, name NOT_NULL TEXT, value INTEGER)"
+    command = "CREATE TABLE IF NOT EXISTS testtable(id INTEGER PRIMARY KEY , name NOT_NULL TEXT, value INTEGER)"
     cursor.execute(command)
+    cursor.execute("INSERT INTO testtable (name, value) VALUES ('Kai', 18)")
+    cursor.execute("SELECT * FROM testtable")
+    records = cursor.fetchall()
+    print(records)
     conn.commit()
     conn.close()
 
