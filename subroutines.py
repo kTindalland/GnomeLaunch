@@ -330,12 +330,14 @@ def levelDesigner(font):
     scheme = colourPackage[0][defaultColourScheme]
 
     while not done:
+        screen, clock = startupPygame('Gnome Launch - Level Designer', screensize)
         for e in pygame.event.get():
             ts.detect(e)
             if backButton.detect(e):
                 done = True
             if saveButton.detect(e):
-                exportLevel('test', levelEntities)
+                saveScreen(font, scheme, levelEntities)
+                saveButton.state = False
 
             for key, value in toolboxButtons.items():
                 if value.detect(e):
@@ -506,13 +508,37 @@ def exportLevel(levelName, levelEntities, folderName=None):
     for wall in levelEntities['Wall']:
         addArea(wall)
 
-    cursor.execute("SELECT * FROM areas")
-    print(cursor.fetchall())
-    cursor.execute("SELECT * FROM gravwells")
-    print(cursor.fetchall())
-
     conn.commit()
     conn.close()
+
+def saveScreen(font, scheme, levelEntities):
+    done = False
+    screensize = [700, 500]
+    screen, clock = startupPygame('Gnome Launch - Save', screensize)
+
+    textbox = Textbox([screen, 0, font], [10, 10], [200, 50], 'Level Name')
+    saveButton = Button(screen, font, [220, 15], [100, 40])
+    backButton = Button(screen, font, [330, 15], [100, 40])
+
+    while not done:
+        for e in pygame.event.get():
+            textbox.detect(e)
+            if saveButton.detect(e):
+                exportLevel(textbox.return_input(), levelEntities)
+                done = True
+            if backButton.detect(e):
+                done = True
+            if e.type == pygame.QUIT:
+                pygame.quit()
+
+        screen.fill(scheme['background'])
+        textbox.draw(scheme)
+
+        saveButton.draw(scheme, 'Save')
+        backButton.draw(scheme, 'Back')
+
+        pygame.display.flip()
+        clock.tick(60)
 
 
 
