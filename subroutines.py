@@ -120,6 +120,10 @@ def startMenu(font):
             levelDesigner(font)
             buttons['Level Designer'].state = False
 
+        if buttons['Load Level'].state:
+            loadScreen(font, scheme)
+            buttons['Load Level'].state = False
+
         pygame.display.flip()
         screen, clock = startupPygame('Gnome Launch - Start Menu')
         clock.tick(60)
@@ -388,7 +392,6 @@ def levelDesigner(font):
         saveButton.draw(scheme, 'Save')
         drawGuideLines(screen, scheme)
 
-
         # Testing instances.
         if drawTest:
             testPlayer.draw(scheme)
@@ -407,7 +410,8 @@ def levelDesigner(font):
         if len(levelEntities['Gravity Well']) > 0:
             for i in levelEntities['Gravity Well']:
                 if i.TBD:
-                    del i
+                    index = levelEntities['Gravity Well'].index(i)
+                    del levelEntities['Gravity Well'][index]
                     continue
                 if not i.selected:
                     i.draw(scheme, None)
@@ -427,7 +431,8 @@ def levelDesigner(font):
         if len(levelEntities['Wall']) > 0:
             for i in levelEntities['Wall']:
                 if i.TBD:
-                    del i
+                    index = levelEntities['Wall'].index(i)
+                    del levelEntities['Wall'][index]
                     continue
                 i.draw(scheme)
 
@@ -487,8 +492,8 @@ def exportLevel(levelName, levelEntities, folderName=None):
     cursor = conn.cursor()
 
     # Execute commands
-    cursor.execute("DROP TABLE IF EXISTS gravwells")
-    cursor.execute("DROP TABLE IF EXISTS areas")
+    cursor.execute("DROP TABLE IF EXISTS gravwells;")
+    cursor.execute("DROP TABLE IF EXISTS areas;")
     cursor.execute("CREATE TABLE IF NOT EXISTS gravwells (id INTEGER PRIMARY KEY, x NOT_NULL INTEGER, y NOT_NULL INTEGER, size INTEGER, mass REAL);")
     cursor.execute("CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY, iden TEXT, x1 INTEGER, y1 INTEGER, x2 INTEGER, y2 INTEGER);")
 
@@ -500,7 +505,7 @@ def exportLevel(levelName, levelEntities, folderName=None):
             cursor.execute("INSERT INTO areas (iden, x1, y1, x2, y2) VALUES ({}, {}, {}, {}, {});".format(
                 "'"+area.identity()+"'", area.origin[0], area.origin[1], area.origin[0]+area.dx, area.origin[1]+area.dy))
         else:
-            cursor.execute("INSERT INTO areas (iden) VALUES (NULL)")
+            cursor.execute("INSERT INTO areas (iden) VALUES (NULL);")
 
     addArea(levelEntities['Player Area'])
     addArea(levelEntities['Goal Area'])
@@ -536,6 +541,128 @@ def saveScreen(font, scheme, levelEntities):
 
         saveButton.draw(scheme, 'Save')
         backButton.draw(scheme, 'Back')
+
+        pygame.display.flip()
+        clock.tick(60)
+
+
+def importLevel(screen, font, dbname='default'):
+    path = dbname + '.db'
+    conn = sql.connect(path)
+    cursor = conn.cursor()
+
+    # Execute commands
+    cursor.execute("SELECT * FROM gravwells;")
+    gravwells = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM areas WHERE iden IS 'PlayerArea'")
+    playerArea = cursor.fetchall()
+    if len(playerArea) > 0:
+        playerArea = playerArea[0]
+    else:
+        playerArea = [None, None]
+
+    cursor.execute("SELECT  * FROM areas WHERE iden IS 'GoalArea'")
+    goalArea = cursor.fetchall()
+    if len(goalArea) > 0:
+        goalArea = goalArea[0]
+    else:
+        goalArea = [None, None]
+
+    cursor.execute("SELECT * FROM areas WHERE iden IS 'WallArea'")
+    walls = cursor.fetchall()
+
+    conn.commit()
+    conn.close()
+
+    levelEntities = {
+        'Gravity Well' : [],
+        'Player Area'  : None,
+        'Goal Area'    : None,
+        'Wall'         : [],
+    }
+
+    for well in gravwells:
+        temp = Well(screen, font, [well[1], well[2]], well[3], well[4])
+        levelEntities['Gravity Well'].append(temp)
+
+    if playerArea[1] != None:
+        levelEntities['Player Area'] = PlayerArea(screen, [playerArea[2], playerArea[3]], [playerArea[4], playerArea[5]])
+
+    if goalArea[1] != None:
+        levelEntities['Goal Area'] = GoalArea(screen, [goalArea[2], goalArea[3]], [goalArea[4], goalArea[5]])
+
+    for wall in walls:
+        temp = Wall(screen, [wall[2], wall[3]], [wall[4], wall[5]])
+        levelEntities['Wall'].append(temp)
+        print(wall)
+
+    return levelEntities
+
+
+def loadScreen(font, scheme):
+
+    done = False
+    done2 = False
+    screensize = [700, 550]
+    screen, clock = startupPygame('Gnome Launch - Load', screensize)
+
+    textbox =  Textbox([screen, 0, font], [10, 10], [200, 50], 'Level Name')
+    loadButton = Button(screen, font, [220, 15], [100, 40])
+    backButton = Button(screen, font, [330, 15], [100, 40])
+
+    while not done:
+        for e in pygame.event.get():
+            textbox.detect(e)
+            loadButton.detect(e)
+            backButton.detect(e)
+            if e.type == pygame.QUIT:
+                pygame.quit()
+
+        screen.fill(scheme['background'])
+
+        textbox.draw(scheme)
+        loadButton.draw(scheme, 'Load')
+        backButton.draw(scheme, 'Back')
+
+        if backButton.state:
+            done = True
+            done2 = True
+            backButton.state = False
+
+        if loadButton.state:
+            done = True
+
+        pygame.display.flip()
+        clock.tick(60)
+
+
+    # Second loop - actual game.
+    levelEntities = importLevel(screen, font, textbox.return_input())
+    print(levelEntities)
+
+    while not done2:
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                pygame.quit()
+
+        screen.fill(scheme['background'])
+        pygame.draw.line(screen, scheme['outline'], [0,50], [700, 50], 3)
+        pygame.draw.rect(screen, scheme['outline'], [0,0,700,550], 3)
+
+        # Draw wells
+        for well in levelEntities['Gravity Well']: # Will need to add more logic when player introduced.
+            well.draw(scheme, None)
+
+        # Draw areas
+        if levelEntities['Player Area'] != None:
+            levelEntities['Player Area'].draw(scheme)
+        if levelEntities['Goal Area'] != None:
+            levelEntities['Goal Area'].draw(scheme)
+
+        # Draw walls
+        for wall in levelEntities['Wall']:
+            wall.draw(scheme)
 
         pygame.display.flip()
         clock.tick(60)
