@@ -124,6 +124,7 @@ def startMenu(font):
             loadScreen(font, scheme)
             buttons['Load Level'].state = False
 
+
         pygame.display.flip()
         screen, clock = startupPygame('Gnome Launch - Start Menu')
         clock.tick(60)
@@ -595,7 +596,6 @@ def importLevel(screen, font, dbname='default'):
     for wall in walls:
         temp = Wall(screen, [wall[2], wall[3]], [wall[4], wall[5]])
         levelEntities['Wall'].append(temp)
-        print(wall)
 
     return levelEntities
 
@@ -641,18 +641,42 @@ def loadScreen(font, scheme):
     levelEntities = importLevel(screen, font, textbox.return_input())
     print(levelEntities)
 
+    backButton = Button(screen, font, [590, 5], [100, 40])
+    spawnPlayerButton = Button(screen, font, [380, 5], [200, 40])
+    player = None
+
     while not done2:
         for e in pygame.event.get():
+            if backButton.detect(e):
+                backButton.state = False
+                done2 = True
+            spawnPlayerButton.detect(e)
             if e.type == pygame.QUIT:
                 pygame.quit()
 
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                if levelEntities['Player Area'].detect(e):
+                    spawner = PlayerSpawner(screen, pygame.mouse.get_pos())
+                    PlayerSpawner.isDrawing = True
+                    print("Hello")
+            if e.type == pygame.MOUSEBUTTONUP and PlayerSpawner.isDrawing:
+                spawner.addSecondCoord(pygame.mouse.get_pos())
+                player, playerSpeed = spawner.spawn()
+                print("World")
+                PlayerSpawner.isDrawing = False
+
+
         screen.fill(scheme['background'])
+
+        backButton.draw(scheme, 'Menu')
+        spawnPlayerButton.draw(scheme, 'Spawn Player')
+
         pygame.draw.line(screen, scheme['outline'], [0,50], [700, 50], 3)
         pygame.draw.rect(screen, scheme['outline'], [0,0,700,550], 3)
 
         # Draw wells
         for well in levelEntities['Gravity Well']: # Will need to add more logic when player introduced.
-            well.draw(scheme, None)
+            well.draw(scheme, player)
 
         # Draw areas
         if levelEntities['Player Area'] != None:
@@ -663,6 +687,16 @@ def loadScreen(font, scheme):
         # Draw walls
         for wall in levelEntities['Wall']:
             wall.draw(scheme)
+
+        # Draw player
+        if player != None:
+            player.draw(scheme)
+
+        # If spawning player
+        if PlayerSpawner.isDrawing:
+            mpos = pygame.mouse.get_pos()
+            pygame.draw.line(screen, scheme['outline'], spawner.startCoords, mpos, 2)
+            
 
         pygame.display.flip()
         clock.tick(60)
@@ -747,6 +781,26 @@ class PicButton(Button):
 
     def identity(self):
         return 'PicButton'
+
+class PlayerSpawner():
+    isDrawing = False
+    def __init__(self, screen, startcoords):
+        self.screen = screen
+        self.startCoords = startcoords
+
+    def addSecondCoord(self, coord):
+        self.secondCoord = coord
+        self.getHyp()
+
+    def getHyp(self): # get length between points
+        self.dx = self.startCoords[0] - self.secondCoord[0]
+        self.dy = self.startCoords[1] - self.secondCoord[1]
+
+        self.hyp = math.sqrt(self.dy**2 + self.dx**2)
+
+    def spawn(self):
+        return Player(self.screen, 1, self.startCoords, [self.dx//30, self.dy//30], [0,50,700,550]), self.hyp
+
 
 class Player():
     def __init__(self, screen, mass, startCoords, vectorComps, range=[0,0,700,500]):
@@ -1003,6 +1057,7 @@ class Area():
                 self.TBD = True
                 return True
         return False
+
 
 
     def identity(self):
