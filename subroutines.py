@@ -645,6 +645,10 @@ def loadScreen(font, scheme):
     spawnPlayerButton = Button(screen, font, [380, 5], [200, 40])
     player = None
 
+    title = font.render(textbox.return_input(), True, scheme['text'])
+    titleHeight = title.get_height()
+
+
     while not done2:
         for e in pygame.event.get():
             if backButton.detect(e):
@@ -658,11 +662,9 @@ def loadScreen(font, scheme):
                 if levelEntities['Player Area'].detect(e):
                     spawner = PlayerSpawner(screen, pygame.mouse.get_pos())
                     PlayerSpawner.isDrawing = True
-                    print("Hello")
             if e.type == pygame.MOUSEBUTTONUP and PlayerSpawner.isDrawing:
                 spawner.addSecondCoord(pygame.mouse.get_pos())
                 player, playerSpeed = spawner.spawn()
-                print("World")
                 PlayerSpawner.isDrawing = False
 
 
@@ -670,6 +672,8 @@ def loadScreen(font, scheme):
 
         backButton.draw(scheme, 'Menu')
         spawnPlayerButton.draw(scheme, 'Spawn Player')
+
+        screen.blit(title, [10, 25-(titleHeight//2)])
 
         pygame.draw.line(screen, scheme['outline'], [0,50], [700, 50], 3)
         pygame.draw.rect(screen, scheme['outline'], [0,0,700,550], 3)
@@ -696,7 +700,12 @@ def loadScreen(font, scheme):
         if PlayerSpawner.isDrawing:
             mpos = pygame.mouse.get_pos()
             pygame.draw.line(screen, scheme['outline'], spawner.startCoords, mpos, 2)
-            
+
+        # Goal area detection.
+        if player != None and levelEntities['Goal Area'] != None:
+            if levelEntities['Goal Area'].playerDetect(player.coords):
+                done2 = True
+
 
         pygame.display.flip()
         clock.tick(60)
@@ -1076,6 +1085,12 @@ class GoalArea(Area):
         super().draw()
         pygame.draw.rect(self.screen, scheme['on'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
 
+    def playerDetect(self, coords):
+        if Well.between(self, [self.origin[0], self.origin[0] + self.dx], coords[0]) and Well.between(self,
+                        [self.origin[1], self.origin[1] + self.dy],coords[1]):
+            return True
+        return False
+
     def identity(self):
         return 'GoalArea'
 
@@ -1083,6 +1098,31 @@ class Wall(Area):
     def draw(self, scheme):
         super().draw()
         pygame.draw.rect(self.screen, scheme['outline'], [self.origin[0], self.origin[1], self.dx, self.dy])
+
+    def playerDetect(self, player):
+        def isCloserTo(num, bound1, bound2):
+            if abs(bound1 - num) < abs(bound2 - num):
+                return True
+            return False
+        coords = player.coords
+        if Well.between(self, [self.origin[0], self.origin[0] + self.dx], coords[0]) and Well.between(self,
+                        [self.origin[1],self.origin[1] + self.dy],coords[1]):
+            # Get boundaries
+            xBoundaries = [min(self.origin[0], self.origin[0]+self.dx), max(self.origin[0], self.origin[0]+self.dx)]
+            yBoundaries = [min(self.origin[1], self.origin[1]+self.dx), max(self.origin[1], self.origin[1]+self.dx)]
+
+            # Top checks.
+            prevCoords = [player.coords[0] - player.vComps[0], player.coords[1] - player.vComps[1]]
+            dx, dy = coords[0] - prevCoords[0], coords[1] - prevCoords[1]
+            m = dy / dx
+            LHS, RHS = False, False
+            if isCloserTo(coords[0], xBoundaries[0], xBoundaries[1]):
+                LHS = True
+            else:
+                RHS = True
+            
+
+
 
     def identity(self):
         return 'WallArea'
