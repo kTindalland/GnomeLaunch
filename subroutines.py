@@ -691,6 +691,8 @@ def loadScreen(font, scheme):
         # Draw walls
         for wall in levelEntities['Wall']:
             wall.draw(scheme)
+            if player != None:
+                wall.playerDetect(player)
 
         # Draw player
         if player != None:
@@ -705,6 +707,7 @@ def loadScreen(font, scheme):
         if player != None and levelEntities['Goal Area'] != None:
             if levelEntities['Goal Area'].playerDetect(player.coords):
                 done2 = True
+
 
 
         pygame.display.flip()
@@ -1108,21 +1111,55 @@ class Wall(Area):
         if Well.between(self, [self.origin[0], self.origin[0] + self.dx], coords[0]) and Well.between(self,
                         [self.origin[1],self.origin[1] + self.dy],coords[1]):
             # Get boundaries
-            xBoundaries = [min(self.origin[0], self.origin[0]+self.dx), max(self.origin[0], self.origin[0]+self.dx)]
-            yBoundaries = [min(self.origin[1], self.origin[1]+self.dx), max(self.origin[1], self.origin[1]+self.dx)]
+            xBoundaries = [min(self.origin[0], self.origin[0] + self.dx), max(self.origin[0], self.origin[0] + self.dx)]
+            yBoundaries = [min(self.origin[1], self.origin[1] + self.dx), max(self.origin[1], self.origin[1] + self.dx)]
 
-            # Top checks.
-            prevCoords = [player.coords[0] - player.vComps[0], player.coords[1] - player.vComps[1]]
-            dx, dy = coords[0] - prevCoords[0], coords[1] - prevCoords[1]
-            m = dy / dx
-            LHS, RHS = False, False
-            if isCloserTo(coords[0], xBoundaries[0], xBoundaries[1]):
-                LHS = True
-            else:
-                RHS = True
-            
+            # Step 1 - Convert coords
+            wallCoords = [[0,0], [0, yBoundaries[1]-yBoundaries[0]], [xBoundaries[1] - xBoundaries[0], yBoundaries[1]-yBoundaries[0]], [xBoundaries[1] - xBoundaries[0], 0]] # From bottom left, clockwise
+            prevCoord = [coords[0] - player.vComps[0], coords[1] - player.vComps[1]]
+            point1 = [prevCoord[0] - xBoundaries[0], yBoundaries[1] - prevCoord[1]]
+            point2 = [coords[0] - xBoundaries[0], yBoundaries[1] - coords[1]]
 
+            # Step 2 - y=mx+c
+            m = (point1[1] - point2[1]) / (point1[0] - point2[0])
+            eq = [m, (m*point1[0]) + point1[1]] # [m, c]
 
+            # Step 3 - Simultaneous equations
+            hitX = False
+            hitY = False
+            # Hits top
+            y = yBoundaries[1]-yBoundaries[0]
+            if eq[0] == 0:
+                eq[0] = 1/999999999999
+            print(eq[0])
+            x = (y - eq[1]) / eq[0]
+            if 0 <= x <= (xBoundaries[1] - xBoundaries[0]):
+                hitY = True
+
+            # Hit bottom
+            y = 0
+            x = (y - eq[1]) / eq[0]
+            if 0 <= x <= (xBoundaries[1] - xBoundaries[0]):
+                hitY = True
+
+            # Hit left
+            x = 0
+            y = (eq[0]*x) + eq[1]
+            print(eq[1])
+            print(y)
+            if 0 <= y <= (yBoundaries[1] - yBoundaries[0]):
+                hitX = True
+
+            # Hit right
+            x = xBoundaries[1] - xBoundaries[0]
+            y = (eq[0] * x) + eq[1]
+            if 0 <= y <= (yBoundaries[1] - yBoundaries[0]):
+                hitX = True
+
+            if hitX:
+                player.vComps[0] *= -1
+            if hitY:
+                player.vComps[1] *= -1
 
     def identity(self):
         return 'WallArea'
