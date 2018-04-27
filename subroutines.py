@@ -11,7 +11,7 @@ def importRawSettings(filename='settings.csv'):
         file = open(filename, 'r')
 
     except:
-        print("An error has occured in importRawSettings")
+        print("An error has occured in importRawSettings") # This is to aid with future maintenance
         return False
 
     else:
@@ -24,13 +24,13 @@ def importRawSettings(filename='settings.csv'):
         return settings
 
 
-def hexcodeToRGB(hexcode):
+def hexcodeToRGB(hexcode): # for reading in a hexcode
     RGBCol = []
     for i in range(0, 5, 2):
         RGBCol.append(int(hexcode[i:i+2], 16))
     return RGBCol
 
-def RGBToHexcode(*args):
+def RGBToHexcode(*args): # for writing to database
     hexcode = ''
     for col in args:
         newSection = hex(col)[2:]
@@ -39,7 +39,7 @@ def RGBToHexcode(*args):
         hexcode += newSection
     return hexcode
 
-def parseSettings(settings):
+def parseSettings(settings): # This takes in raw settings and then spits out formatted settings
     for line in settings:
         if line[0] == 'colour schemes':
             colSettings = settings[settings.index(line):settings.index(line)+int(line[1])+1]
@@ -50,7 +50,7 @@ def parseSettings(settings):
 
 def parseColourSchemes(colSettings):
     schemes = {}
-    titles = ['background', 'outline', 'on', 'off', 'text']
+    titles = ['background', 'outline', 'on', 'off', 'text'] # All titles of colours
     reservedNames = ['colour schemes']
     for scheme in colSettings[1:]:
         if scheme[0] not in reservedNames:
@@ -74,8 +74,8 @@ def startMenu(font):
 
     done = False
 
-    coords = generateMainBlockCoords([700, 500], ['NasalizationRg-Regular', 50, 'GNOME LAUNCH'], [3, 180, 50])
-    buttonNames = ['Tutorials', 'Level Designer', 'Load Level']
+    coords = generateMainBlockCoords([700, 500], ['NasalizationRg-Regular', 50, 'GNOME LAUNCH'], [3, 180, 50]) # First number in final arg is how many buttons you have, this may be an issue for future maintenance
+    buttonNames = ['Tutorials', 'Level Designer', 'Load Level'] # The names in here are what buttons get generated
     buttons = generateButtons(screen, font, coords[1:], buttonNames, [180, 50])
 
     settingsButton = PicButton(screen, font, [640, 10], [50,50])
@@ -116,10 +116,12 @@ def startMenu(font):
             settingsScreen(font, screen, clock)
             settingsButton.state = False
 
+        # If Level designer clicked
         if buttons['Level Designer'].state:
             levelDesigner(font)
             buttons['Level Designer'].state = False
 
+        # If load button clicked
         if buttons['Load Level'].state:
             loadScreen(font, scheme)
             buttons['Load Level'].state = False
@@ -150,12 +152,12 @@ def generateMainBlockCoords(screensize, titleParams, buttonParams, offset=[0,0])
 
     return coordList
 
-def drawTitle(screen, scheme, position, fontName, size, title):
+def drawTitle(screen, scheme, position, fontName, size, title): # Mainly used for main menu
     font = pygame.font.SysFont(fontName, size, False, True)
     renderedTitle = font.render(title, True, scheme['text'])
     screen.blit(renderedTitle, position)
 
-def generateButtons(screen, font, coords, names, dimensions):
+def generateButtons(screen, font, coords, names, dimensions): # Called in main menu
     buttons = {}
     for index, buttonName in enumerate(names):
         buttons[buttonName] = Button(screen, font, coords[index], dimensions)
@@ -213,6 +215,7 @@ def drawGear(screen, scheme, position, dimensions):
 def settingsScreen(font, screen, clock):
     done = False
 
+    # Setup settings and change caption
     pygame.display.set_caption('Gnome Launch - Settings Screen')
     rawSettings = importRawSettings('settings.csv')
     colourPackage = parseSettings(rawSettings)
@@ -274,7 +277,7 @@ def genColourSchemeSettings(screen, scheme, font, position, buttonSize, colourPa
 
     return textCoords, buttons
 
-def drawText(screen, scheme, font, theString, coords):
+def drawText(screen, scheme, font, theString, coords): # General draw text function
     text = font.render(theString, True, scheme['text'])
     screen.blit(text, coords)
 
@@ -282,14 +285,14 @@ def changeColPackage(newScheme, oldColourPackage):
     oldColourPackage[1] = newScheme
     return newScheme, oldColourPackage
 
-def writeSettings(colourPackage):
-    colSchemeLines = writeColSchemes(colourPackage)
+def writeSettings(colourPackage): # Write settings back into file
+    colSchemeLines = writeColSchemes(colourPackage) # Outsource col schemes to seperate function
     with open('settings.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         for line in colSchemeLines:
             writer.writerow(line)
 
-def writeColSchemes(colourPackage):
+def writeColSchemes(colourPackage): # Format the settings back to a usable format
     lines = [['colour schemes', len(colourPackage[0]), colourPackage[1]]]
     for schemeName, scheme in colourPackage[0].items():
         # [Name, Background, Outline, On, Off, Text]
@@ -302,6 +305,7 @@ def writeColSchemes(colourPackage):
     return lines
 
 def levelDesigner(font):
+    # This is the dictionary that holds all the level objects.
     levelEntities = {
         'Gravity Well' : [],
         'Player Area'  : None,
@@ -310,6 +314,7 @@ def levelDesigner(font):
     }
     done = False
     screensize = [950, 550]
+    # Sets up a new screen because it needs a new screensize.
     screen, clock = startupPygame('', screensize)
 
     backButton = Button(screen, font, [550,5], [125, 40])
@@ -318,18 +323,18 @@ def levelDesigner(font):
     saveButton = Button(screen, font, [375, 5], [125, 40])
 
     Y = 45 # Y displacement for toolbox
-    names = ['Player Area', 'Gravity Well', 'Goal Area', 'Wall']
+    names = ['Player Area', 'Gravity Well', 'Goal Area', 'Wall'] # However many names are in the list is how many are generated
     toolboxCoords = [[725, Y+((50+30)*i)] for i in range(len(names))]
-    toolboxButtons = createToolboxButtons(screen, font, toolboxCoords, names, [200, 50])
+    toolboxButtons = createToolboxButtons(screen, font, toolboxCoords, names, [200, 50]) # Creates buttons for the right hand toolbar
 
-    testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550])
+    testPlayer = Player(screen, 1, [100, 100], [0.45, -0.1], [0, 50, 700, 550]) # Purely for testing
     testWell = Well(screen, font, [250, 200], 10, 1000000000000)
-    drawTest = False
+    drawTest = False # If false then the two test objects are not drawn
 
-    ts = LabelToggleSwitch(screen, font, [725,550-50-25], [200, 50], 0)
+    ts = LabelToggleSwitch(screen, font, [725,550-50-25], [200, 50], 0) # Draw / Select swtich
 
     pygame.display.set_caption('Gnome Launch - Level Designer')
-    rawSettings = importRawSettings('settings.csv')
+    rawSettings = importRawSettings('settings.csv') # Import settings again
     colourPackage = parseSettings(rawSettings)
     defaultColourScheme = colourPackage[1]
     scheme = colourPackage[0][defaultColourScheme]
@@ -337,35 +342,35 @@ def levelDesigner(font):
     while not done:
         screen, clock = startupPygame('Gnome Launch - Level Designer', screensize)
         for e in pygame.event.get():
-            ts.detect(e)
+            ts.detect(e) # Toggle switch detect
             if backButton.detect(e):
                 done = True
-            if saveButton.detect(e):
+            if saveButton.detect(e): # If save button clicked
                 saveScreen(font, scheme, levelEntities)
                 saveButton.state = False
 
-            for key, value in toolboxButtons.items():
+            for key, value in toolboxButtons.items(): # Toolbox buttons detect
                 if value.detect(e):
-                    for keyB, valueB in toolboxButtons.items():
+                    for keyB, valueB in toolboxButtons.items(): # Set all states to false
                         valueB.state = False
-                    value.state = True
+                    value.state = True # Set clicked button's state to true
 
             if e.type == pygame.QUIT:
                 pygame.quit()
 
             mpos = pygame.mouse.get_pos()
-            if 0 <= mpos[0] <= 700 and 50 <= mpos[1] <= 550:  # If in game space
+            if 0 <= mpos[0] <= 700 and 50 <= mpos[1] <= 550:  # If in game space - validation
                 if not ts.state and e.type == pygame.MOUSEBUTTONDOWN: # If drawing
                     for key, value in toolboxButtons.items():
                         if value.state:
                             if key == 'Gravity Well': # If Gravity Well selected
                                 temp = Well(screen, font, mpos, 10, 10**12)
                                 levelEntities[key].append(temp)
-                            if key == 'Player Area':
+                            if key == 'Player Area': # If player area selected
                                 levelEntities = checkAreas(key, screen, PlayerArea, levelEntities)
-                            if key == 'Goal Area':
+                            if key == 'Goal Area': # If goal area selected
                                 levelEntities = checkAreas(key, screen, GoalArea, levelEntities)
-                            if key == 'Wall':
+                            if key == 'Wall': # If wall selected
                                 if not Wall.isDrawing:
                                     mpos = pygame.mouse.get_pos()
                                     levelEntities[key].append(Wall(screen, mpos))
@@ -419,16 +424,19 @@ def levelDesigner(font):
                     continue
                 selected = i
 
+        # Drawing and deletion of player area
         if levelEntities['Player Area'] != None:
             levelEntities['Player Area'].draw(scheme)
             if levelEntities['Player Area'].TBD:
                 levelEntities['Player Area'] = None
 
+        # Drawing and deletion of goal area
         if levelEntities['Goal Area'] != None:
             levelEntities['Goal Area'].draw(scheme)
             if levelEntities['Goal Area'].TBD:
                 levelEntities['Goal Area'] = None
 
+        # Drawing and deletion of walls.
         if len(levelEntities['Wall']) > 0:
             for i in levelEntities['Wall']:
                 if i.TBD:
@@ -437,7 +445,7 @@ def levelDesigner(font):
                     continue
                 i.draw(scheme)
 
-        if selected != False: # Making sure selectdd is drawn last
+        if selected != False: # Making sure selectd is drawn last
             if selected.identity() == 'Well':
                 selected.draw(scheme, None)
 
@@ -446,7 +454,7 @@ def levelDesigner(font):
         clock.tick(60)
 
 
-def drawGuideLines(screen, scheme):
+def drawGuideLines(screen, scheme): # Drawing lines for level designer
     pygame.draw.line(screen, scheme['outline'], [700, 0], [700, 550], 2)
     pygame.draw.line(screen, scheme['outline'], [0, 50], [700, 50], 2)
     pygame.draw.rect(screen, scheme['outline'], [0,0, 950, 550], 2)
@@ -461,7 +469,7 @@ def drawToolbarTitle(screen, font, scheme):
     screen.blit(title, [startX + ((spaceWidth//2)-(width//2)), 10])
 
 
-def createToolboxButtons(screen, font, coords, names, dimensions):
+def createToolboxButtons(screen, font, coords, names, dimensions): # Generates  buttons depending on how many names its given
     buttons = {}
     for index, name in enumerate(names):
         buttons[name] = Button(screen, font, coords[index], dimensions)
@@ -470,7 +478,7 @@ def createToolboxButtons(screen, font, coords, names, dimensions):
     return buttons
 
 
-def checkAreas(key, screen, selectedClass, levelEntities):
+def checkAreas(key, screen, selectedClass, levelEntities): # Checking for goal area and spawn area
     if not selectedClass.isDrawing:
         mpos = pygame.mouse.get_pos()
         levelEntities[key] = selectedClass(screen, mpos)
@@ -482,7 +490,7 @@ def checkAreas(key, screen, selectedClass, levelEntities):
     return levelEntities
 
 
-def exportLevel(levelName, levelEntities, folderName=None):
+def exportLevel(levelName, levelEntities, folderName=None): # this will create the database with all the level data in
     if folderName == None:
         path = levelName + '.db'
     else:
@@ -558,6 +566,7 @@ def importLevel(screen, font, dbname='default'):
 
     cursor.execute("SELECT * FROM areas WHERE iden IS 'PlayerArea'")
     playerArea = cursor.fetchall()
+    # Check there is a player area
     if len(playerArea) > 0:
         playerArea = playerArea[0]
     else:
@@ -565,6 +574,7 @@ def importLevel(screen, font, dbname='default'):
 
     cursor.execute("SELECT  * FROM areas WHERE iden IS 'GoalArea'")
     goalArea = cursor.fetchall()
+    # Check there is a goal area
     if len(goalArea) > 0:
         goalArea = goalArea[0]
     else:
@@ -582,6 +592,8 @@ def importLevel(screen, font, dbname='default'):
         'Goal Area'    : None,
         'Wall'         : [],
     }
+
+    # Format the level entities
 
     for well in gravwells:
         temp = Well(screen, font, [well[1], well[2]], well[3], well[4])
@@ -611,7 +623,7 @@ def loadScreen(font, scheme):
     loadButton = Button(screen, font, [220, 15], [100, 40])
     backButton = Button(screen, font, [330, 15], [100, 40])
 
-    while not done:
+    while not done: # First loop - getting filename
         for e in pygame.event.get():
             textbox.detect(e)
             loadButton.detect(e)
@@ -639,7 +651,6 @@ def loadScreen(font, scheme):
 
     # Second loop - actual game.
     levelEntities = importLevel(screen, font, textbox.return_input())
-    print(levelEntities)
 
     backButton = Button(screen, font, [590, 5], [100, 40])
     spawnPlayerButton = Button(screen, font, [380, 5], [200, 40])
@@ -648,8 +659,7 @@ def loadScreen(font, scheme):
     title = font.render(textbox.return_input(), True, scheme['text'])
     titleHeight = title.get_height()
 
-
-    while not done2:
+    while not done2: # Second loop, plays level
         for e in pygame.event.get():
             if backButton.detect(e):
                 backButton.state = False
@@ -720,13 +730,13 @@ class Button():
         self.screen, self.font, self.position, self.dimensions = screen, font, position, dimensions
         self.state = False
 
-        def rect(mousepos):
+        def rect(mousepos): # For rectangular button
             if self.position[0] <= mousepos[0] <= (self.position[0] + self.dimensions[0]):
                 if self.position[1] <= mousepos[1] <= (self.position[1] + self.dimensions[1]):
                     return True
             return False
 
-        def circ(mousepos):
+        def circ(mousepos): # For circular button
             dx, dy = self.position[0] - mousepos[0], self.position[1] - mousepos[1]
             if dx ** 2 + dy ** 2 <= self.dimensions ** 2:
                 return True
@@ -739,7 +749,7 @@ class Button():
             self.equation = circ
             self.correctDraw = self.circDraw
 
-    def detect(self, e):
+    def detect(self, e): # Detect if clicked
         if e.type == pygame.MOUSEBUTTONDOWN:
             if self.equation(pygame.mouse.get_pos()):
                 self.state = not self.state
@@ -794,8 +804,8 @@ class PicButton(Button):
     def identity(self):
         return 'PicButton'
 
-class PlayerSpawner():
-    isDrawing = False
+class PlayerSpawner(): # Aids in spawning a player object
+    isDrawing = False # if true then the mouse is being held down
     def __init__(self, screen, startcoords):
         self.screen = screen
         self.startCoords = startcoords
@@ -810,7 +820,7 @@ class PlayerSpawner():
 
         self.hyp = math.sqrt(self.dy**2 + self.dx**2)
 
-    def spawn(self):
+    def spawn(self): # When the mouse is released
         return Player(self.screen, 1, self.startCoords, [self.dx//30, self.dy//30], [0,50,700,550]), self.hyp
 
 
@@ -828,6 +838,7 @@ class Player():
         self.check()
 
     def check(self):
+        # Making sure vector is in correct direction
         if self.coords[0] < self.range[0]:
             self.coords[0] = self.range[0]
             self.vComps[0] *= -1
@@ -887,9 +898,9 @@ class Well():
 
         self.delBox = Button(self.screen, self.font, [self.startcoords[0]+abs(self.__width)-80, self.startcoords[1]+10], [70, 30])
 
-    def draw(self, scheme, player):
+    def draw(self, scheme, player): # Draws the well
         pygame.draw.circle(self.screen, scheme['text'], self.position, self.size)
-        if player != None:
+        if player != None: # If there is a player object assigned to this well
             self.calc(player)
         if self.selected:
             self.drawSelectBox(scheme)
@@ -901,27 +912,27 @@ class Well():
             mpos = pygame.mouse.get_pos()
 
             dx, dy = mpos[0] - self.position[0], mpos[1] - self.position[1]
-            if dx**2 + dy**2 <= self.size**2:
+            if dx**2 + dy**2 <= self.size**2: # If in the well
                 self.selected = True
-            elif self.selected and self.between([self.position[0], self.position[0] + self.__width],
+            elif self.selected and self.between([self.position[0], self.position[0] + self.__width], # If selected and in the selection box
                                                 mpos[0]) and self.between(
                 [self.position[1], self.position[1] + self.__height], mpos[1]):
                 self.selected = True
 
-            else:
+            else: # The user has clicked off of the selection box
                 try:
-                    self.mass = int(self.__massBox.return_input())
+                    self.mass = int(self.__massBox.return_input()) # Try assign the input value to mass
                 except:
-                    self.mass = self.defaults[0]
+                    self.mass = self.defaults[0] # If invalid then set to default
                 try:
-                    self.size = int(self.__sizeBox.return_input())
+                    self.size = int(self.__sizeBox.return_input()) # Try assign the input value to size
                 except:
-                    self.size = self.defaults[1]
+                    self.size = self.defaults[1] # If invalid then set to default
                 self.selected = False
-        if self.__massBox != False and self.selected:
+        if self.__massBox != False and self.selected: # If the textboxes exist and the well is selected, detect for the textboxes
             self.__massBox.detect(e)
             self.__sizeBox.detect(e)
-            self.delBox.detect(e)
+            self.delBox.detect(e) # And detect for the deletion button
 
 
 
@@ -932,41 +943,41 @@ class Well():
 
     def drawSelectBox(self, scheme):
         self.font.set_underline(True)
-        title = self.font.render('Gravity Well', True, scheme['text'])
+        title = self.font.render('Gravity Well', True, scheme['text']) # Render underlined title
         self.font.set_underline(False)
-        massTag = self.font.render('Mass:', True, scheme['text'])
+        massTag = self.font.render('Mass:', True, scheme['text']) # Render tags
         sizeTag = self.font.render('Size:', True, scheme['text'])
 
-        pygame.draw.rect(self.screen, scheme['background'], [self.position[0], self.position[1], self.__width, self.__height])
+        pygame.draw.rect(self.screen, scheme['background'], [self.position[0], self.position[1], self.__width, self.__height]) # Draw the blank box
         pygame.draw.rect(self.screen, scheme['outline'], [self.position[0], self.position[1], self.__width, self.__height], 3)
-        self.__massBox.draw(scheme)
+        self.__massBox.draw(scheme) # Draw the textboxes
         self.__sizeBox.draw(scheme)
         self.delBox.draw(scheme, 'Del')
 
         titleWidth, massHeight, sizeHeight = title.get_width(), massTag.get_height(), sizeTag.get_height()
 
-        self.screen.blit(title, [((270+self.longTag)//2)-(titleWidth//2)+self.startcoords[0], self.startcoords[1]+10])
+        self.screen.blit(title, [((270+self.longTag)//2)-(titleWidth//2)+self.startcoords[0], self.startcoords[1]+10]) # Blit all the text
         self.screen.blit(massTag, [self.startcoords[0]+10, 20 + title.get_height() + (25-(massHeight//2)) + self.startcoords[1]])
         self.screen.blit(sizeTag, [self.startcoords[0]+10, 100 + title.get_height() + (25-(sizeHeight//2)) + self.startcoords[1]])
 
 
 
-    def calc(self, player):
+    def calc(self, player): # Calculate the change in vectors
         dx = abs(self.position[0] - player.coords[0])
         dy = abs(self.position[1] - player.coords[1])
         theta = math.atan(dy/dx)
 
-        G = 6.67 * (10**-11)
-        r = math.sqrt((dx**2)+(dy**2))
+        G = 6.67 * (10**-11) # Universal gravitational constant
+        r = math.sqrt((dx**2)+(dy**2)) # Distance between the objects
         if r < self.size:
             r = self.size
 
-        g = (-G*self.mass)/(r**2)
-        Fx = g*math.cos(theta)
-        Fy = g * math.sin(theta)
+        g = (-G*self.mass)/(r**2) # Gravitational field strength at where the player is
+        Fx = g*math.cos(theta) # Force in the x direction
+        Fy = g * math.sin(theta) # Force in the y direction
 
-        ax = abs(Fx / player.mass)
-        ay = abs(Fy / player.mass)
+        ax = abs(Fx / player.mass) # Acceleration in the x direction
+        ay = abs(Fy / player.mass) # Acceleration in the y direction
 
         # Check where player is in relation to well
         # Is player below
@@ -976,7 +987,7 @@ class Well():
         if player.coords[0] > self.position[0]:
             ax *= -1
 
-        player.vComps[0] += ax
+        player.vComps[0] += ax # Change the players vectors by the acceleration
         player.vComps[1] += ay
 
     def identity(self):
@@ -987,11 +998,11 @@ class Well():
 class ToggleSwitch():
     def __init__(self, screen, font, position, dimensions, default):
         self.screen, self.font, self.position, self.dimensions, self.state = screen, font, position, dimensions, default
-        self.blockWidth = self.dimensions[0] * 0.4
-        self.blockEnds = [0, self.dimensions[0] * 0.6]
-        self.goal = self.blockEnds[self.state]
-        self.blockX = self.goal
-        self.speed = 7
+        self.blockWidth = self.dimensions[0] * 0.4 # How wide the moving block is
+        self.blockEnds = [0, self.dimensions[0] * 0.6] # X coords at either side
+        self.goal = self.blockEnds[self.state] # Where it should be
+        self.blockX = self.goal # Where it is
+        self.speed = 7 # How many pixels it travels in a tick
 
 
     def draw(self, scheme):
@@ -1001,7 +1012,7 @@ class ToggleSwitch():
         self.move()
 
 
-    def detect(self, e):
+    def detect(self, e): # If it has been clicked
         if e.type == pygame.MOUSEBUTTONDOWN:
             mpos = pygame.mouse.get_pos()
             if self.position[0] <= mpos[0] <= (self.position[0]+self.dimensions[0]):
@@ -1010,7 +1021,7 @@ class ToggleSwitch():
                         self.state = 0
                     else:
                         self.state = 1
-                    self.goal = self.blockEnds[self.state]
+                    self.goal = self.blockEnds[self.state] # Change which side it should be at
 
 
     def move(self):
@@ -1020,6 +1031,7 @@ class ToggleSwitch():
             change *= self.speed
             # Need to validate coords.
             self.blockX += change
+            # Coord validation
             if self.blockX < self.blockEnds[0]:
                 self.blockX = self.blockEnds[0]
             if self.blockX > self.blockEnds[1]:
@@ -1029,6 +1041,9 @@ class ToggleSwitch():
         return 'ToggleSwitch'
 
 class LabelToggleSwitch(ToggleSwitch):
+    # Same as toggle switch but has labels above the left and right sides
+    # The side which is selected will be highlighted in the on colour
+    # while the side which isn't will be highlighted in the off colour
     def draw(self, scheme, labels=['On', 'Off']):
         super().draw(scheme)
         leftText = self.font.render(labels[0], True, scheme['off'])
@@ -1045,24 +1060,26 @@ class LabelToggleSwitch(ToggleSwitch):
     def identity(self):
         return 'LabelToggleSwitch'
 
-class Area():
-    isDrawing = False
+class Area(): # Parent class
+    isDrawing = False # If true then the user will be on the second click
     def __init__(self, screen, cornerOne, cornerTwo=None):
         self.screen = screen
         self.origin = cornerOne
         self.drawAtMouse = False
         self.TBD = False
-        if cornerTwo != None:
+        if cornerTwo != None: # Does not need to initialise with a second corner
             self.dx, self.dy = cornerTwo[0] - cornerOne[0], cornerTwo[1] - cornerOne[1]
         else:
-            self.drawAtMouse = True
+            self.drawAtMouse = True # If does not have second corner, second corner is mouse pos
 
     def draw(self):
+        # handling when there isn't a second corner
         if self.drawAtMouse:
             cornerTwo = pygame.mouse.get_pos()
             self.dx, self.dy = cornerTwo[0] - self.origin[0], cornerTwo[1] - self.origin[1]
 
     def detect(self, e):
+        # detect if clicked, if has then mark instance for deletion
         if e.type == pygame.MOUSEBUTTONDOWN:
             mpos = pygame.mouse.get_pos()
             if Well.between(self, [self.origin[0], self.origin[0]+self.dx], mpos[0]) and Well.between(self, [self.origin[1], self.origin[1]+self.dy], mpos[1]):
@@ -1077,7 +1094,7 @@ class Area():
 
 class PlayerArea(Area):
     def draw(self, scheme):
-        super().draw()
+        super().draw() # Special draw - needs different colour than other areas
         pygame.draw.rect(self.screen, scheme['off'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
 
     def identity(self):
@@ -1085,7 +1102,7 @@ class PlayerArea(Area):
 
 class GoalArea(Area):
     def draw(self, scheme):
-        super().draw()
+        super().draw() # Special draw - needs different colour than other areas
         pygame.draw.rect(self.screen, scheme['on'], [self.origin[0], self.origin[1], self.dx, self.dy], 3)
 
     def playerDetect(self, coords):
@@ -1099,7 +1116,7 @@ class GoalArea(Area):
 
 class Wall(Area):
     def draw(self, scheme):
-        super().draw()
+        super().draw() # Special draw - needs different colour than other areas
         pygame.draw.rect(self.screen, scheme['outline'], [self.origin[0], self.origin[1], self.dx, self.dy])
 
     def playerDetect(self, player):
